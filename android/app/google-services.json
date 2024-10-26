@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "655502160606",
+    "project_id": "newhopefood-36cff",
+    "storage_bucket": "newhopefood-36cff.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:655502160606:android:70bd1d7cd052976162884f",
+        "android_client_info": {
+          "package_name": "com.doan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAp-iPrBsyOBxmEBhOdlc0NxR5GSkO0Py4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
