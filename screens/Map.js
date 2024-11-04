@@ -1,13 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, PermissionsAndroid, Platform, Alert, TextInput, Button } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 
 const GEOAPIFY_API_KEY = 'be8283f0ca404169924653620c942bfa';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyAY147ZFhEL1fg7jQ-CdrK-sncScdCucG4'; // Thêm Google Maps API key của bạn
 
 const StoreLocationScreen = () => {
   const [currentPosition, setCurrentPosition] = useState(null);
   const [address, setAddress] = useState('');
+  const [destination, setDestination] = useState(null);
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
   const mapRef = useRef(null);
 
   const getCoordinatesFromAddress = async (address) => {
@@ -106,7 +109,20 @@ const StoreLocationScreen = () => {
   // Thêm hàm xử lý khi người dùng bấm vào bản đồ
   const handleMapPress = async (event) => {
     const { coordinate } = event.nativeEvent;
-    setCurrentPosition(coordinate);
+    
+    if (!currentPosition) {
+      setCurrentPosition(coordinate);
+    } else if (!destination) {
+      setDestination(coordinate);
+      // Get and set the route when both points are available
+      const route = await getRouteFromGeoapify(currentPosition, coordinate);
+      setRouteCoordinates(route);
+    } else {
+      // Reset points and route
+      setCurrentPosition(coordinate);
+      setDestination(null);
+      setRouteCoordinates([]);
+    }
 
     // Chuyển đổi tọa độ thành địa chỉ
     try {
@@ -132,6 +148,30 @@ const StoreLocationScreen = () => {
     } catch (error) {
       console.error('Error getting address:', error);
       Alert.alert('Error', 'Không thể lấy địa chỉ. Vui lòng thử lại.');
+    }
+  };
+
+  const getRouteFromGeoapify = async (start, end) => {
+    try {
+      const response = await fetch(
+        `https://api.geoapify.com/v1/routing?waypoints=${start.latitude},${start.longitude}|${end.latitude},${end.longitude}&mode=drive&apiKey=${GEOAPIFY_API_KEY}`
+      );
+      
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        // Chuyển đổi coordinates từ Geoapify ([lon, lat]) sang định dạng của React Native Maps (latitude, longitude)
+        const routeCoordinates = data.features[0].geometry.coordinates[0].map(point => ({
+          latitude: point[1],
+          longitude: point[0]
+        }));
+        
+        // Vẽ đường đi bằng Polyline
+        return routeCoordinates;
+      }
+    } catch (error) {
+      console.error('Error getting route:', error);
+      Alert.alert('Error', 'Không thể lấy đường đi. Vui lòng thử lại.');
     }
   };
 
@@ -203,8 +243,24 @@ const StoreLocationScreen = () => {
         {currentPosition && (
           <Marker
             coordinate={currentPosition}
-            title={"Vị trí đã chọn"}
+            title={"Điểm xuất phát"}
             description={address}
+          />
+        )}
+        
+        {destination && (
+          <Marker
+            coordinate={destination}
+            title={"Điểm đến"}
+            pinColor="blue"
+          />
+        )}
+
+        {currentPosition && destination && routeCoordinates.length > 0 && (
+          <Polyline
+            coordinates={routeCoordinates}
+            strokeWidth={3}
+            strokeColor="blue"
           />
         )}
       </MapView>

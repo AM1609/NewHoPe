@@ -33,6 +33,7 @@
     "react-native-gesture-handler": "^2.16.2",
     "react-native-image-crop-picker": "^0.41.1",
     "react-native-maps": "^1.18.2",
+    "react-native-maps-directions": "^1.9.0",
     "react-native-paper": "^5.12.5",
     "react-native-permissions": "^5.0.2",
     "react-native-popup-menu": "^0.16.1",
