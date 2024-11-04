@@ -3,6 +3,7 @@ import { Image, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useMyContextProvider, login } from '../index';
 import colors from '../screens/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -18,19 +19,55 @@ const Login = ({ navigation }) => {
   const hasErrorPassword = () => passwordTouched && password.length < 6;
 
   useEffect(() => {
-    setDisableLogin(email.trim() === '' || password.trim() === '' || hasErrorEmail() || hasErrorPassword());
+    setDisableLogin(
+      email.trim() === '' || 
+      password.trim() === '' || 
+      hasErrorEmail() || 
+      hasErrorPassword()
+    );
   }, [email, password, emailTouched, passwordTouched]);
 
-  const handleLogin = () => {
-    login(dispatch, email, password);
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Email và mật khẩu không được để trống.");
+      return;
+    }
+    try {
+      await login(dispatch, email, password);
+      await AsyncStorage.setItem('userEmail', email);
+      await AsyncStorage.setItem('userPassword', password);
+    } catch (error) {
+      console.error("Đăng nhập thất bại:", error);
+      alert("Đăng nhập thất bại. Vui lòng kiểm tra thông tin.");
+    }
   };
 
   useEffect(() => {
+    const checkLogin = async () => {
+      const savedEmail = await AsyncStorage.getItem('userEmail');
+      const savedPassword = await AsyncStorage.getItem('userPassword');
+      if (savedEmail && savedPassword) {
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+      }
+    };
+    checkLogin();
+  }, []);
+
+  // Theo dõi sự thay đổi của email và password
+  useEffect(() => {
+    if (email && password) {
+      handleLogin();
+    }
+  }, [email, password]);
+
+  useEffect(() => {
     if (userLogin != null) {
-      if (userLogin.role === "admin")
+      if (userLogin.role === "admin") {
         navigation.navigate("Admin");
-      else if (userLogin.role === "customer")
+      } else if (userLogin.role === "customer") {
         navigation.navigate("Customer");
+      }
     }
   }, [userLogin]);
 

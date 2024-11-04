@@ -48,7 +48,7 @@ export default function PaymentOptionsScreen({ navigation }) {
       phone: userLogin.phone,
       address: userLogin.address, // Add the user's address here
       datetime: new Date(),
-      state: "pending",
+      state: "new",
       paymentMethod: "ZaloPay",
       transactionId: app_trans_id
     }).then(docRef => {
@@ -143,13 +143,13 @@ export default function PaymentOptionsScreen({ navigation }) {
       let statusMessage = '';
       switch(result.return_code) {
         case 1:
-          statusMessage = 'Transaction successful';
+          statusMessage = 'Payment successful';
           break;
         case 2:
-          statusMessage = 'Transaction failed';
+          statusMessage = 'Payment failed';
           break;
         case 3:
-          statusMessage = 'Transaction pending or processing';
+          statusMessage = 'Payment pending or processing';
           break;
         default:
           statusMessage = 'Unknown status';
