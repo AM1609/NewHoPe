@@ -36,6 +36,8 @@ const Login = ({ navigation }) => {
       await login(dispatch, email, password);
       await AsyncStorage.setItem('userEmail', email);
       await AsyncStorage.setItem('userPassword', password);
+      console.log("userEmail",email);
+      console.log("userPassword",password);
     } catch (error) {
       console.error("Đăng nhập thất bại:", error);
       alert("Đăng nhập thất bại. Vui lòng kiểm tra thông tin.");
@@ -48,24 +50,18 @@ const Login = ({ navigation }) => {
       const savedPassword = await AsyncStorage.getItem('userPassword');
       if (savedEmail && savedPassword) {
         setEmail(savedEmail);
-        setPassword(savedPassword);
       }
     };
     checkLogin();
   }, []);
-
-  // Theo dõi sự thay đổi của email và password
-  useEffect(() => {
-    if (email && password) {
-      handleLogin();
-    }
-  }, [email, password]);
 
   useEffect(() => {
     if (userLogin != null) {
       if (userLogin.role === "admin") {
         navigation.navigate("Admin");
       } else if (userLogin.role === "customer") {
+        navigation.navigate("Customer");
+      } else if (userLogin.role === "staff") {
         navigation.navigate("Customer");
       }
     }

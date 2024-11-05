@@ -15,58 +15,38 @@ const config = {
   query_endpoint: "https://sb-openapi.zalopay.vn/v2/query"
 };
 
-export default function PaymentOptionsScreen({ navigation }) {
-  const { cart } = useCart();
+export default function PaymentOptionsScreen({ navigation, route }) {
+  const { cartItems, totalAmount, userInfo, appointmentId, address } = route.params || {};
   const [controller] = useMyContextProvider();
   const { userLogin } = controller;
   const [lastTransactionId, setLastTransactionId] = useState(null);
 
   const handlePayment = async () => {
-    // Generate app_trans_id using customer ID and timestamp
-    const customerId = userLogin.email.split('@')[0];
+    const customerId = userInfo.email.split('@')[0];
     const timestamp = moment().format('YYMMDDHHmmss');
     const app_trans_id = `${timestamp}_${customerId}`;
 
-    // Add order to Firebase immediately
-    const APPOINTMENTs = firestore().collection("Appointments");
-    const services = cart.map(item => ({
-      title: item.title,
-      quantity: item.quantity,
-      options: item.options
-    }));
+    try {
+      // Cập nhật trạng thái đơn hàng thành pending khi bắt đầu thanh toán
+      const APPOINTMENTs = firestore().collection("Appointments");
+      await APPOINTMENTs.doc(appointmentId).update({
+        paymentMethod: "ZaloPay",
+        transactionId: app_trans_id,
+        state: "pending" // Cập nhật trạng thái thành pending
+      });
 
-    const totalAmount = cart.reduce((total, item) => {
-      return total + (item.price * item.quantity) + 
-        (item.options ? item.options.reduce((optionTotal, option) => optionTotal + (option.price * item.quantity), 0) : 0);
-    }, 0);
-
-    APPOINTMENTs.add({
-      email: userLogin.email,
-      fullName: userLogin.fullName,
-      services,
-      totalPrice: totalAmount,
-      phone: userLogin.phone,
-      address: userLogin.address, // Add the user's address here
-      datetime: new Date(),
-      state: "new",
-      paymentMethod: "ZaloPay",
-      transactionId: app_trans_id
-    }).then(docRef => {
-      APPOINTMENTs.doc(docRef.id).update({ id: docRef.id });
-      console.log("Order added to Firebase with ID: ", docRef.id);
-      
-      // Proceed with ZaloPay payment process
+      // Tiến hành thanh toán
       initiateZaloPayment(app_trans_id, totalAmount);
-    }).catch(error => {
-      console.error("Error adding order to Firebase: ", error);
-      Alert.alert('Error', 'Failed to create order. Please try again.');
-    });
+    } catch (error) {
+      console.error("Error updating payment info: ", error);
+      Alert.alert('Error', 'Failed to process payment. Please try again.');
+    }
   };
 
   const initiateZaloPayment = async (app_trans_id, totalAmount) => {
     try {
       // Prepare items for ZaloPay
-      const items = cart.map(item => ({
+      const items = cartItems.map(item => ({
         itemid: item.id,
         itemname: item.title,
         itemprice: item.price,
@@ -139,23 +119,57 @@ export default function PaymentOptionsScreen({ navigation }) {
       });
 
       const result = await response.json();
+      console.log('Transaction check result:', result);
+      console.log('Return code:', result.return_code);
 
-      let statusMessage = '';
-      switch(result.return_code) {
-        case 1:
-          statusMessage = 'Payment successful';
-          break;
-        case 2:
-          statusMessage = 'Payment failed';
-          break;
-        case 3:
-          statusMessage = 'Payment pending or processing';
-          break;
-        default:
-          statusMessage = 'Unknown status';
+      // Chỉ cập nhật trạng thái khi người dùng bấm nút kiểm tra
+      if (result.return_code === 1) {
+        // Thanh toán thành công
+        const APPOINTMENTs = firestore().collection("Appointments");
+        await APPOINTMENTs.doc(appointmentId).update({
+          state: 'delivering',
+          paymentStatus: 'Payment successful'
+        });
+
+        Alert.alert(
+          'Transaction Status', 
+          'Thanh toán thành công!\n\nĐơn hàng của bạn đang được xử lý.', 
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Appointments')
+            }
+          ]
+        );
+      } else if (result.return_code === 2) {
+        // Thanh toán thất bại
+        const APPOINTMENTs = firestore().collection("Appointments");
+        await APPOINTMENTs.doc(appointmentId).update({
+          state: 'failed',
+          paymentStatus: 'Payment failed'
+        });
+
+        Alert.alert(
+          'Transaction Status',
+          'Thanh toán thất bại!\n\nVui lòng thử lại.',
+          [
+            {
+              text: 'OK'
+            }
+          ]
+        );
+      } else {
+        // Đang xử lý hoặc trạng thái khác
+        Alert.alert(
+          'Transaction Status',
+          'Đơn hàng đang được xử lý.\nVui lòng kiểm tra lại sau.',
+          [
+            {
+              text: 'OK'
+            }
+          ]
+        );
       }
-
-      Alert.alert('Transaction Status', `${statusMessage}\n\nDetails: ${result.return_message}`);
     } catch (error) {
       console.error('Status Check Error:', error);
       Alert.alert('Error', 'Failed to check transaction status.');

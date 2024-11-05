@@ -46,7 +46,11 @@ const ProfileCustomer = ({navigation}) =>{
                             <View style={styles.infoRow}>
                                 <Text style={styles.label}>Cấp bậc: </Text>
                                 <Text style={styles.value}>
-                                    {userLogin.role === "customer" ? "Khách hàng" : userLogin.role}
+                                    {userLogin.role === "customer" 
+                                        ? "Khách hàng" 
+                                        : userLogin.role === "staff" 
+                                            ? "Nhân viên" 
+                                            : userLogin.role}
                                 </Text>
                             </View>
                         </View>

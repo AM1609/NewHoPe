@@ -15,26 +15,34 @@ const Appointments = () => {
     const navigation = useNavigation(); // Khởi tạo navigation
 
     useEffect(() => {
-        const unsubscribe = firestore()
-            .collection('Appointments')
-            .where('email', '==', userLogin.email)
-            .onSnapshot(querySnapshot => {
-                const appointmentsData = [];
-                querySnapshot.forEach(documentSnapshot => {
-                    appointmentsData.push({
-                        ...documentSnapshot.data(),
-                        id: documentSnapshot.id,
-                    });
+        console.log("userLogin.base", userLogin.base);
+        const appointmentsRef = firestore().collection('Appointments');
+        
+        // Query dựa trên role và base của user
+        const query = userLogin.role === 'staff' 
+            ? appointmentsRef.where('store.name', '==', userLogin.base)  // Truy cập store.name trong map
+            : appointmentsRef.where('email', '==', userLogin.email);  // Nếu là customer, chỉ lấy đơn của họ
+
+        const unsubscribe = query.onSnapshot(querySnapshot => {
+            const appointmentsData = [];
+            querySnapshot.forEach(documentSnapshot => {
+                const data = documentSnapshot.data();
+                console.log("Store name:", data.store?.name); // Log store name của mỗi đơn hàng
+                console.log("Current user base:", userLogin.base); // Log base của user đang đăng nhập
+                appointmentsData.push({
+                    ...data,
+                    id: documentSnapshot.id,
                 });
-
-                // Sắp xếp theo thời gian, đơn hàng mới nhất ở trên cùng
-                appointmentsData.sort((a, b) => b.datetime.toDate() - a.datetime.toDate());
-
-                setAppointments(appointmentsData);
             });
+
+            // Sắp xếp theo thời gian, đơn hàng mới nhất ở trên cùng
+            appointmentsData.sort((a, b) => b.datetime.toDate() - a.datetime.toDate());
+
+            setAppointments(appointmentsData);
+        });
             
         return () => unsubscribe();
-    }, []);
+    }, [userLogin.role, userLogin.base]);
     
     useEffect(() => {
         const fetchServices = async () => {
@@ -57,11 +65,17 @@ const Appointments = () => {
             <Card style={styles.card}>
                 <Card.Content>
                     <Paragraph style={[styles.text, 
-                        item.state === 'new' ? styles.redText : 
-                        item.state === 'completed' ? styles.greenText : 
+                        item.state === 'delivering' ? styles.redText : 
+                        item.state === 'delivered' ? styles.greenText :
+                        item.state === 'canceled' ? styles.canceledText :
                         styles.defaultText
                     ]}>
-                        Trạng thái: {item.state === 'new' ? 'Đang giao' : 'Đã hoàn thành'}
+                        Trạng thái: {
+                            item.state === 'delivering' ? 'Đang giao' :
+                            item.state === 'delivered' ? 'Đã giao' :
+                            item.state === 'canceled' ? 'Đã huỷ' :
+                            'Chưa thanh toán'
+                        }
                     </Paragraph>
                     <Paragraph style={styles.text}>Thời gian: {item.datetime ? item.datetime.toDate().toLocaleString() : 'Không xác định'}</Paragraph>
                     <Paragraph style={styles.text}>
@@ -106,9 +120,14 @@ const styles = StyleSheet.create({
         fontSize: 26, // Kích thước lớn hơn
         fontWeight: "bold",
     },
-    greenText: { // Màu xanh lá cho trạng thái "Đã hoàn thành"
+    greenText: { // Màu xanh lá cho trạng thái "Đã giao"
         color: 'green',
-        fontSize: 26, // Kích thước lớn hơn
+        fontSize: 26,
+        fontWeight: "bold",
+    },
+    canceledText: { // Màu xám cho trạng thái "Đã huỷ"
+        color: 'gray',
+        fontSize: 26,
         fontWeight: "bold",
     },
     defaultText: { // Màu mặc định cho các trạng thái khác

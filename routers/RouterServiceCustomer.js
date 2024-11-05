@@ -51,7 +51,30 @@ const RouterServiceCustomer = ({ navigation }) => {
             />
             <Stack.Screen name="ChangePassword" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
             <Stack.Screen name="Appointment" component={Appointment} options={{ title: "Đặt lịch" }} />
-            <Stack.Screen name="Map" component={Map} options={{ title: "Bản đồ" }} />
+            {/* <Stack.Screen 
+                name="Map" 
+                component={Map}
+                options={{
+                    title: "Đặt hàng",
+                    headerTitleAlign: "left",
+                    headerStyle: {
+                        backgroundColor: colors.background,
+                    },
+                }}
+            /> */}
+            <Stack.Screen 
+                name="Map" 
+                component={Map} 
+                options={{ 
+                    title: "Địa chỉ", 
+                    headerShown: true,
+                    headerLeft: () => (
+                        <TouchableOpacity onPress={() => navigation.navigate("Cart")}>
+                            <Image source={require('../assets/back.png')} style={{ width: 24, height: 24, marginLeft: 10 }} />
+                        </TouchableOpacity>
+                    ),
+                }} 
+            />
             <Stack.Screen name="Payment" component={Payment} options={{ title: "Thanh toán" }} />
             <Stack.Screen name="PaymentZalo" component={PaymentZalo} options={{ title: "Thanh toán ZaloPay" }} />
         </Stack.Navigator>

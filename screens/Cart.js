@@ -200,12 +200,12 @@ const Cart = () => {
       >
         Đặt Hàng
       </Button> */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={[styles.button, styles.orderButton]}
         onPress={handleSubmit}
       >
         <Text style={styles.buttonText}>Đặt Hàng</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       <TouchableOpacity
         style={[styles.button, styles.clearButton]}
         onPress={clearCart}
@@ -213,22 +213,27 @@ const Cart = () => {
         <Text style={styles.buttonText}>Xóa giỏ hàng</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.button, styles.mapButton]} // Add a new style for the map button
-        onPress={() => navigation.navigate('Map')} // Navigate to the Map screen
+        style={[styles.button, styles.orderButton]}
+        onPress={() => navigation.navigate('Map', {
+          cartItems: cart,
+          totalAmount: totalWithDiscount,
+          userInfo: userLogin,
+          discountValue: discountValue
+        })}
       >
-        <Text style={styles.buttonText}>Xem Bản Đồ</Text>
+        <Text style={styles.buttonText}>Đặt Hàng</Text>
       </TouchableOpacity>
             {/* <TouchableOpacity
         style={[styles.button, styles.mapButton]} // Add a new style for the map button
         onPress={() => navigation.navigate('Payment')} // Navigate to the Map screen
       >
             </TouchableOpacity> */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
         style={[styles.button, styles.mapButton]} // Add a new style for the map button
         onPress={() => navigation.navigate('PaymentZalo')} // Navigate to the Map screen
       >
         <Text style={styles.buttonText}>Thanh toán</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
     </View>
   );
