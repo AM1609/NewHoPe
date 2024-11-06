@@ -624,7 +624,7 @@ const StoreLocationScreen = () => {
 
 // Thay thế navigation options cũ
 StoreLocationScreen.navigationOptions = {
-  headerShown: true
+  headerShown: false
 };
 
 export default StoreLocationScreen;

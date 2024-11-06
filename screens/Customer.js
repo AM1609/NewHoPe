@@ -2,13 +2,15 @@ import React from "react";
 import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import { createStackNavigator } from '@react-navigation/stack';
 import RouterServiceCustomer from "../routers/RouterServiceCustomer";
-import Appointments from "./Appointments";
+import Appointments from "./Order";
 import ProfileCustomer from "./ProfileCustomer";
 import Cart from "./Cart";
 import OrderDetail from "./OrderDetail";
 import ChangePassword from "./ChangePassword";
 import { Image } from "react-native";
-
+import Map from "./Map";
+import PaymentZalo from "./PaymentZalo";
+import DeliveryMap from "./DeliveryMap";
 const Tab = createMaterialBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -17,6 +19,11 @@ const TabNavigator = () => (
     initialRouteName="RouterServiceCustomer"
     labeled={true}
     shifting={true}
+    screenOptions={({ route }) => ({
+      tabBarStyle: {
+        display: route.name === 'Payment' ? 'none' : 'flex'
+      }
+    })}
   >
     <Tab.Screen
       name="RouterServiceCustomer"
@@ -91,6 +98,27 @@ const Customer = () => (
       name="OrderDetail"
       component={OrderDetail}
       options={{ title: "Chi tiết đơn hàng" }}
+    />
+    <Stack.Screen
+      name="Map"
+      component={Map}
+      options={{ title: "Địa Chỉ" }}
+    />
+    <Stack.Screen
+      name="DeliveryMap"
+      component={DeliveryMap}
+      options={{ title: "Địa Chỉ" }}
+    />
+    <Stack.Screen
+      name="Payment"
+      component={PaymentZalo}
+      options={{ 
+        title: "Thanh toán",
+        tabBarVisible: false,
+        tabBarStyle: { display: 'none' },
+        tabBarButton: () => null,
+        presentation: 'modal'
+      }}
     />
     <Stack.Screen
       name="ChangePassword"

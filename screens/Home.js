@@ -6,7 +6,7 @@ import datetime from "react-native-date-picker"
 import DatePicker from "react-native-date-picker"
 import firestore from "@react-native-firebase/firestore"
 import { useMyContextProvider } from "../index"
-import Appointments from "./Appointments"
+import Appointments from "./Order"
 import { useCart } from "../routers/CartContext"
 import CheckBox from '@react-native-community/checkbox'; 
 const Appointment = ({navigation, route }) => {
@@ -62,7 +62,7 @@ const Appointment = ({navigation, route }) => {
         });
     };
 
-    const totalPrice = Number(service.price) + optionPrice; 
+    const totalPrice = Number(service?.price ?? 0);
 
     return (
         <View style={styles.container}> 

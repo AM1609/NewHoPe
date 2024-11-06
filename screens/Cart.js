@@ -16,6 +16,11 @@ const truncateTitle = (title) => {
     return title;
 };
 
+const generateOrderId = () => {
+  // Tạo orderId với format: ORD + timestamp
+  return 'ORD' + Date.now();
+};
+
 const Cart = () => {
   const { cart, removeFromCart, clearCart, updateQuantity, addToCart1, addQuantity } = useCart(); // Ensure updateQuantity is destructured here
 
@@ -72,7 +77,11 @@ const Cart = () => {
 
   const [controller, dispatch] = useMyContextProvider()  
   const { userLogin } = controller 
-  
+
+  // Add this check for employee role
+  const isEmployee = userLogin?.role === 'staff';
+  console.log('User Role:', userLogin?.role); // Thêm log để debug
+
   const APPOINTMENTs = firestore().collection("Appointments")
 
   const increaseQuantity = (id,options) => {
@@ -212,29 +221,31 @@ const Cart = () => {
       >
         <Text style={styles.buttonText}>Xóa giỏ hàng</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.button, styles.orderButton]}
-        onPress={() => navigation.navigate('Map', {
-          cartItems: cart,
-          totalAmount: totalWithDiscount,
-          userInfo: userLogin,
-          discountValue: discountValue
-        })}
-      >
-        <Text style={styles.buttonText}>Đặt Hàng</Text>
-      </TouchableOpacity>
-            {/* <TouchableOpacity
-        style={[styles.button, styles.mapButton]} // Add a new style for the map button
-        onPress={() => navigation.navigate('Payment')} // Navigate to the Map screen
-      >
-            </TouchableOpacity> */}
-            {/* <TouchableOpacity
-        style={[styles.button, styles.mapButton]} // Add a new style for the map button
-        onPress={() => navigation.navigate('PaymentZalo')} // Navigate to the Map screen
-      >
-        <Text style={styles.buttonText}>Thanh toán</Text>
-      </TouchableOpacity> */}
-
+      
+      {isEmployee ? (
+        <TouchableOpacity
+          style={[styles.button, styles.orderButton]}
+          onPress={() => navigation.navigate('PaymentQR', {
+            orderId: generateOrderId(),
+            amount: total,
+            userInfo: userLogin
+          })}
+        >
+          <Text style={[styles.buttonText, { color: 'white' }]}>Thanh toán</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={[styles.button, styles.orderButton]}
+          onPress={() => navigation.navigate('Map', {
+            cartItems: cart,
+            totalAmount: totalWithDiscount,
+            userInfo: userLogin,
+            discountValue: discountValue
+          })}
+        >
+          <Text style={[styles.buttonText, { color: 'white' }]}>Đặt Hàng</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

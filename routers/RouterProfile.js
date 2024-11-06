@@ -1,7 +1,7 @@
 import { createStackNavigator } from "@react-navigation/stack";
 import ServicesCustomer from '../screens/ServicesCustomer';
 import { useMyContextProvider } from "../index";
-import Appointment from "../screens/Appointment";
+import Appointment from "../screens/Home";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { Image, Text } from "react-native";
 import ChangePassword from "../screens/ChangePassword";
