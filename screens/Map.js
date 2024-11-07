@@ -66,8 +66,8 @@ const StoreLocationScreen = () => {
       mapRef.current.animateToRegion({
         latitude: currentPosition.latitude,
         longitude: currentPosition.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
       }, 1000);
     }
   }, [currentPosition]);
@@ -88,7 +88,10 @@ const StoreLocationScreen = () => {
   // Sửa lại hàm handleMapPress
   const handleMapPress = async (event) => {
     const { coordinate } = event.nativeEvent;
-    setCurrentPosition(coordinate);
+    setCurrentPosition({
+      ...coordinate,
+      isCurrentLocation: false
+    });
     
     // Tìm cơ sở gần nhất
     let nearestStore = null;
@@ -419,7 +422,11 @@ const StoreLocationScreen = () => {
             Geolocation.getCurrentPosition(
               async (position) => {
                 const { latitude, longitude } = position.coords;
-                const currentCoordinate = { latitude, longitude };
+                const currentCoordinate = { 
+                  latitude, 
+                  longitude,
+                  isCurrentLocation: true
+                };
                 setCurrentPosition(currentCoordinate);
 
                 // Tìm cơ sở gần nhất
@@ -505,15 +512,16 @@ const StoreLocationScreen = () => {
         showsUserLocation={true}
         onPress={handleMapPress}
       >
-        {currentPosition && (
+        {/* Only show marker if location was selected by tapping the map */}
+        {currentPosition && !currentPosition.isCurrentLocation && (
           <Marker
             coordinate={currentPosition}
-            title={"Vị trí xuất phát"}
+            title={"Vị trí nhận hàng"}
             description={address}
             pinColor="red"
           />
         )}
-        
+
         {destination && (
           <Marker
             coordinate={destination}
