@@ -11,7 +11,7 @@ import auth from '@react-native-firebase/auth';
 const Appointments = () => {
     const [appointments, setAppointments] = useState([]);
     const [services, setServices] = useState([]); // State để lưu dịch vụ
-    const [controller] = useMyContextProvider();
+    const [controller, setController] = useMyContextProvider();
     const { userLogin } = controller;
     const navigation = useNavigation(); // Khởi tạo navigation
     const [isLoading, setIsLoading] = useState(false);
@@ -19,26 +19,34 @@ const Appointments = () => {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
-        // Kiểm tra userLogin trước khi sử dụng
-        if (!userLogin) {
+        if (!userLogin?.email) {
+            console.log('Missing email:', userLogin?.email);
             navigation.navigate('Login');
             return;
         }
 
-        console.log("userLogin.base", userLogin.base);
         const appointmentsRef = firestore().collection('Appointments');
-        console.log('Is staff?:', userLogin.role === 'staff');
+        console.log('User role:', userLogin.role);
+        console.log('User base:', userLogin.base);
         
-        const query = userLogin.role === 'staff' 
-            ? appointmentsRef.where('store.name', '==', userLogin.base)
-            : appointmentsRef.where('email', '==', userLogin.email);
+        let query;
+        if (userLogin.role === 'staff') {
+            // Nếu là nhân viên nhưng chưa có base, lấy tất cả appointments
+            if (!userLogin.base) {
+                console.log('Staff without base assigned - showing all appointments');
+                query = appointmentsRef;
+            } else {
+                query = appointmentsRef.where('store.name', '==', userLogin.base);
+            }
+        } else {
+            // Nếu là khách hàng, lấy theo email
+            query = appointmentsRef.where('email', '==', userLogin.email);
+        }
 
         const unsubscribe = query.onSnapshot(querySnapshot => {
             const appointmentsData = [];
             querySnapshot.forEach(documentSnapshot => {
                 const data = documentSnapshot.data();
-                console.log("Store name:", data.store?.name); // Log store name của mỗi đơn hàng
-                console.log("Current user base:", userLogin.base); // Log base của user đang đăng nhập
                 appointmentsData.push({
                     ...data,
                     id: documentSnapshot.id,
@@ -80,36 +88,48 @@ const Appointments = () => {
             try {
                 const currentUser = auth().currentUser;
                 
-                if (!currentUser) {
-                    setIsStaff(false); // Set default value when no user
-                    console.log('No authenticated user found');
-                    Alert.alert('Error', 'Vui lòng đăng nhập để tiếp tục');
+                if (!currentUser || !currentUser.email) {
+                    console.log('No authenticated user or email found');
                     navigation.navigate('Login');
                     return;
                 }
 
+                console.log('Current user email:', currentUser.email); // Debug log
+
                 const userDoc = await firestore()
-                    .collection('users')
-                    .doc(currentUser.uid)
+                    .collection('USERS')
+                    .doc(currentUser.email)
                     .get();
 
                 if (userDoc.exists) {
-                    const userData = {
-                        ...userDoc.data(),
-                        email: currentUser.email,
-                        uid: currentUser.uid
-                    };
+                    const userData = userDoc.data();
+                    console.log('Fetched user data:', userData); // Debug log
+                    
+                    // Ensure all required fields are present
+                    if (!userData.email) {
+                        userData.email = currentUser.email;
+                    }
+
                     setUser(userData);
-                    // Add null check before accessing role
-                    setIsStaff(userData?.role === 'staff' || false);
+                    setController({
+                        type: 'USER_LOGIN',
+                        value: {
+                            email: userData.email,
+                            base: userData.base || null,
+                            role: userData.role || 'customer',
+                            // Include other necessary user data
+                            fullName: userData.fullName,
+                            phone: userData.phone,
+                            address: userData.address
+                        }
+                    });
+                    setIsStaff(userData.role === 'staff');
                 } else {
-                    // Set default values for new users
-                    setIsStaff(false);
-                    // ... rest of your new user creation code ...
+                    console.log('User document not found for email:', currentUser.email);
+                    navigation.navigate('Login');
                 }
             } catch (error) {
                 console.error("Error in fetchUserData:", error);
-                setIsStaff(false);
                 Alert.alert(
                     'Error',
                     'Không thể tải thông tin người dùng. Vui lòng thử lại sau.'
@@ -119,8 +139,11 @@ const Appointments = () => {
             }
         };
 
-        fetchUserData();
-    }, []);
+        // Only run if we don't have user data
+        if (!controller.userLogin?.email) {
+            fetchUserData();
+        }
+    }, [controller.userLogin, setController]);
 
     const formatDateTime = (timestamp) => {
         if (!timestamp) return '';
