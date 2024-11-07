@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Image, TextInput, View, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { Image, TextInput, View, FlatList, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from "react-native";
 import { Text } from "react-native-paper";
 import firestore from '@react-native-firebase/firestore';
 import { SwiperFlatList } from 'react-native-swiper-flatlist';
@@ -52,178 +52,257 @@ const ServicesCustomer = ({ navigation }) => {
     };
 
     const renderItem = ({ item }) => (
-        <TouchableOpacity onPress={() => handleAppointment(item)} style={styles.serviceItem}>
+        <TouchableOpacity 
+            onPress={() => handleAppointment(item)} 
+            style={styles.serviceItem}
+            activeOpacity={0.7}
+        >
             <View style={styles.imageContainer}>
-                {item.image !== "" && (
+                {item.image !== "" ? (
                     <Image
                         source={{ uri: item.image }}
                         style={styles.serviceImage}
                         resizeMode="cover"
                     />
+                ) : (
+                    <View style={styles.placeholderImage}>
+                        <Text style={styles.placeholderText}>No Image</Text>
+                    </View>
                 )}
             </View>
             <View style={styles.textContainer}>
                 <Text 
                     style={styles.serviceTitle}
-                    numberOfLines={1}  // Limit to one line
-                    ellipsizeMode="tail"  // Add ellipsis at the end
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                 >
                     {item.title}
                 </Text>
                 <Text style={styles.servicePrice}>
-                    {Number(item.price).toLocaleString('vi-VN')} vnđ
+                    {Number(item.price).toLocaleString('vi-VN')}đ
                 </Text>
             </View>
         </TouchableOpacity>
     );
 
     return (
-        <FlatList
-            data={services}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-            numColumns={2}
-            columnWrapperStyle={{ justifyContent: 'space-between' }}
-            ListHeaderComponent={
-                <>
-                    <View style={{ backgroundColor: "white" }}>
+        <View style={styles.container}>
+            <FlatList
+                data={services}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                numColumns={2}
+                columnWrapperStyle={styles.columnWrapper}
+                showsVerticalScrollIndicator={false}
+                ListHeaderComponent={
+                    <View style={styles.header}>
                         <SwiperFlatList
-                            style={{ width: '100%', height: 150 }}
+                            style={styles.swiper}
                             autoplay
-                            autoplayDelay={2}
+                            autoplayDelay={3}
                             autoplayLoop
                             index={0}
-                            showPagination={false}  // Set this to false to remove the dots
                         >
                             <View style={styles.Viewimg}>
-                                <Image style={styles.image} source={require("../assets/3-Fishsticks.jpg")}></Image>
+                                <Image 
+                                    style={styles.image} 
+                                    source={require("../assets/3-Fishsticks.jpg")}
+                                    resizeMode="contain"
+                                />
                             </View>
                             <View style={styles.Viewimg}>
-                                <Image style={styles.image} source={require("../assets/3-taro.jpg")}></Image>
+                                <Image 
+                                    style={styles.image} 
+                                    source={require("../assets/3-taro.jpg")}
+                                    resizeMode="contain"
+                                />
                             </View>
                             <View style={styles.Viewimg}>
-                                <Image style={styles.image} source={require("../assets/ga_2_mieng.png")}></Image>
+                                <Image 
+                                    style={styles.image} 
+                                    source={require("../assets/ga_2_mieng.png")}
+                                    resizeMode="contain"
+                                />
                             </View>
                         </SwiperFlatList>
-                        <View style={{ paddingLeft: 20, paddingRight: 20, marginTop: 20, marginBottom: 20 }}>
-                            <TextInput
-                                value={name}
-                                placeholder="Tìm kiếm"
-                                onChangeText={(text) => {
-                                    setName(text);
-                                    const result = initialServices.filter(service => service.title.toLowerCase().includes(text.toLowerCase()));
-                                    setServices(result);
-                                }}
-                                style={styles.searchInput}
-                            />
+
+                        <View style={styles.searchContainer}>
+                            <View style={styles.searchWrapper}>
+                                <TextInput
+                                    value={name}
+                                    placeholder="Tìm kiếm dịch vụ..."
+                                    placeholderTextColor="#666"
+                                    onChangeText={(text) => {
+                                        setName(text);
+                                        const result = initialServices.filter(service => 
+                                            service.title.toLowerCase().includes(text.toLowerCase())
+                                        );
+                                        setServices(result);
+                                    }}
+                                    style={styles.searchInput}
+                                />
+                                <View style={styles.searchIcon}>
+                                    {/* Add your search icon here */}
+                                </View>
+                            </View>
                         </View>
-                        <View style={{ flexDirection: 'row', padding: 10 }}>
-                            <TouchableOpacity style={[styles.categoryButton, { backgroundColor: '#f0f0f0' }]} onPress={() => filterByCategory('all')}>
-                                <Text style={styles.categoryText}>Tất cả</Text>
+
+                        <ScrollView 
+                            horizontal 
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.categoriesContainer}
+                        >
+                            <TouchableOpacity 
+                                style={[styles.categoryButton, { backgroundColor: '#ff6347' }]} 
+                                onPress={() => filterByCategory('all')}
+                            >
+                                <Text style={[styles.categoryText, { color: '#fff' }]}>Tất cả</Text>
                             </TouchableOpacity>
                             {categories.map((category, index) => (
-                                <TouchableOpacity key={index} style={[styles.categoryButton, { backgroundColor: 'white' }]} onPress={() => filterByCategory(category)}>
+                                <TouchableOpacity 
+                                    key={index} 
+                                    style={styles.categoryButton} 
+                                    onPress={() => filterByCategory(category)}
+                                >
                                     <Text style={styles.categoryText}>{category}</Text>
                                 </TouchableOpacity>
                             ))}
-                        </View>
-                        <Text style={{
-                            padding: 15,
-                            fontSize: 25,
-                            fontWeight: "bold",
-                        }}>
+                        </ScrollView>
+
+                        <Text style={styles.sectionTitle}>
                             Danh sách dịch vụ
                         </Text>
                     </View>
-                </>
-            }
-        />
+                }
+            />
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    rowitem: {
+    container: {
+        flex: 1,
+        backgroundColor: '#f8f9fa',
+    },
+    header: {
+        backgroundColor: '#fff',
+        paddingBottom: 10,
+    },
+    swiper: {
+        height: 200,
+    },
+    searchContainer: {
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+    },
+    searchWrapper: {
+        position: 'relative',
+        backgroundColor: '#f5f5f5',
+        borderRadius: 25,
         flexDirection: 'row',
         alignItems: 'center',
-        borderTopWidth: 1,
-        borderColor: "#F0F0F1"
     },
-    Viewimg: {
-        paddingLeft: 15,
-        justifyContent: "center",
-        alignSelf: "center",
+    searchInput: {
+        flex: 1,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#333',
     },
-    image: {
-        width: 390,
-        height: 220,
+    searchIcon: {
+        padding: 10,
+    },
+    categoriesContainer: {
+        paddingHorizontal: 15,
+        marginBottom: 15,
     },
     categoryButton: {
-        backgroundColor: 'white',
-        width: 100,
-        height: 50,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
         marginRight: 10,
-        borderWidth: 1,
-        borderColor: '#ccc',
-    },
-    categoryText: {
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    serviceItem: {
-        flex: 1,
-        margin: 10,
-        padding: 15,
-        borderRadius: 15,
-        backgroundColor: 'white',
-        alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
             height: 2,
         },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    categoryText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+    },
+    sectionTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+    },
+    columnWrapper: {
+        paddingHorizontal: 10,
+        justifyContent: 'space-between',
+    },
+    serviceItem: {
+        width: '47%',
+        marginHorizontal: 5,
+        marginBottom: 20,
+        backgroundColor: '#fff',
+        borderRadius: 15,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
         shadowRadius: 4,
-        elevation: 5,
+        elevation: 3,
     },
     imageContainer: {
-        width: 150,
+        width: '100%',
         height: 150,
-        justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: '#f5f5f5',
     },
     serviceImage: {
-        height: '100%',
         width: '100%',
-        borderRadius: 10,
+        height: '100%',
     },
-    textContainer: {
+    placeholderImage: {
+        width: '100%',
+        height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 10,
+    },
+    placeholderText: {
+        color: '#999',
+        fontSize: 14,
+    },
+    textContainer: {
+        padding: 12,
     },
     serviceTitle: {
-        fontSize: 24,
-        fontWeight: "bold",
-        textAlign: 'center',
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
     },
     servicePrice: {
-        fontSize: 20,
-        fontWeight: "bold",
-        textAlign: 'center',
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#666',
         marginTop: 5,
     },
-    searchInput: {
-        borderColor: "#0066cc",
-        borderWidth: 1,
-        borderRadius: 50,
-        paddingHorizontal: 16,
-        height: 60,
-        fontSize: 20,
-        marginVertical: 10,
-        backgroundColor: '#f9f9f9',
+    Viewimg: {
+        width: Dimensions.get('window').width,
+        height: 200,
+    },
+    image: {
+        width: '100%',
+        height: '100%',
     },
 });
 

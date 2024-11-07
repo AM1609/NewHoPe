@@ -13,7 +13,7 @@ import PaymentZalo from "./PaymentZalo";
 import DeliveryMap from "./DeliveryMap";
 const Tab = createMaterialBottomTabNavigator();
 const Stack = createStackNavigator();
-
+import PaymentQR from "./PaymentQR";
 const TabNavigator = () => (
   <Tab.Navigator
     initialRouteName="RouterServiceCustomer"
@@ -21,7 +21,7 @@ const TabNavigator = () => (
     shifting={true}
     screenOptions={({ route }) => ({
       tabBarStyle: {
-        display: route.name === 'Payment' ? 'none' : 'flex'
+        display: ['Payment', 'PaymentZalo'].includes(route.name) ? 'none' : 'flex',
       }
     })}
   >
@@ -71,6 +71,7 @@ const TabNavigator = () => (
         ),
       }}
     />
+     
     <Tab.Screen
       name="ProfileCustomer"
       component={ProfileCustomer}
@@ -110,19 +111,22 @@ const Customer = () => (
       options={{ title: "Địa Chỉ" }}
     />
     <Stack.Screen
-      name="Payment"
+      name="PaymentZalo"
       component={PaymentZalo}
       options={{ 
         title: "Thanh toán",
-        tabBarVisible: false,
         tabBarStyle: { display: 'none' },
         tabBarButton: () => null,
-        presentation: 'modal'
       }}
     />
     <Stack.Screen
       name="ChangePassword"
       component={ChangePassword}
+      options={{ title: "Đổi mật khẩu" }}
+    />
+    <Stack.Screen
+      name="PaymentQR"
+      component={PaymentQR}
       options={{ title: "Đổi mật khẩu" }}
     />
     {/* Add more non-tabbed screens here if needed */}

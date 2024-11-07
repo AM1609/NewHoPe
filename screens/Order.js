@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, FlatList,StyleSheet, Alert } from "react-native";
+import { View, FlatList,StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { Text,Card,Title,Paragraph,IconButton, Button } from "react-native-paper";
 import firestore from '@react-native-firebase/firestore';
 import { Menu, MenuTrigger, MenuOptions, MenuOption } from 'react-native-popup-menu';
@@ -19,13 +19,19 @@ const Appointments = () => {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
+        // Kiểm tra userLogin trước khi sử dụng
+        if (!userLogin) {
+            navigation.navigate('Login');
+            return;
+        }
+
         console.log("userLogin.base", userLogin.base);
         const appointmentsRef = firestore().collection('Appointments');
-        console.log('Is sdwadtaff?:', userLogin.role === 'staff');
-        // Query dựa trên role và base của user
+        console.log('Is staff?:', userLogin.role === 'staff');
+        
         const query = userLogin.role === 'staff' 
-            ? appointmentsRef.where('store.name', '==', userLogin.base)  // Truy cập store.name trong map
-            : appointmentsRef.where('email', '==', userLogin.email);  // Nếu là customer, chỉ lấy đơn của họ
+            ? appointmentsRef.where('store.name', '==', userLogin.base)
+            : appointmentsRef.where('email', '==', userLogin.email);
 
         const unsubscribe = query.onSnapshot(querySnapshot => {
             const appointmentsData = [];
@@ -46,11 +52,17 @@ const Appointments = () => {
         });
             
         return () => unsubscribe();
-    }, [userLogin.role, userLogin.base]);
+    }, [userLogin]);
     
     useEffect(() => {
         const fetchServices = async () => {
             try {
+                // Kiểm tra userLogin trước khi thực hiện các thao tác
+                if (!controller.userLogin) {
+                    navigation.navigate('Login');
+                    return;
+                }
+                
                 const servicesCollection = await firestore().collection('services').get();
                 const servicesData = servicesCollection.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setServices(servicesData);
@@ -60,7 +72,7 @@ const Appointments = () => {
         };
 
         fetchServices();
-    }, []);
+    }, [controller.userLogin, navigation]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -110,31 +122,58 @@ const Appointments = () => {
         fetchUserData();
     }, []);
 
-    // show các lịch
+    // show các lch
     const renderItem = ({ item }) => {
-        const service = services.find(s => s.id === item.serviceId); // Tìm dịch vụ tương ứng với item
+        const service = services.find(s => s.id === item.serviceId);
+        
+        const getStatusStyle = (state) => {
+            switch(state) {
+                case 'delivering':
+                    return { backgroundColor: '#E3F2FD', statusColor: '#1976D2' };
+                case 'delivered':
+                    return { backgroundColor: '#E8F5E9', statusColor: '#2E7D32' };
+                case 'canceled':
+                    return { backgroundColor: '#FFEBEE', statusColor: '#D32F2F' };
+                default:
+                    return { backgroundColor: '#FFF3E0', statusColor: '#F57C00' };
+            }
+        };
+
+        const statusStyle = getStatusStyle(item.state);
+
         return (
-            <Card style={styles.card}>
+            <Card style={[styles.card, { backgroundColor: statusStyle.backgroundColor }]}>
                 <Card.Content>
-                    <Paragraph style={[styles.text, 
-                        item.state === 'delivering' ? styles.deliveringText : 
-                        item.state === 'delivered' ? styles.greenText :
-                        item.state === 'canceled' ? styles.canceledText :
-                        styles.defaultText
-                    ]}>
-                        {
-                            item.state === 'delivering' ? 'Đang giao' :
-                            item.state === 'delivered' ? 'Đã giao' :
-                            item.state === 'canceled' ? 'Đã huỷ' :
-                            'Chưa thanh toán'
-                        }
-                    </Paragraph>
-                    <Paragraph style={styles.text}>Thời gian: {item.datetime ? item.datetime.toDate().toLocaleString() : 'Không xác định'}</Paragraph>
-                    <Paragraph style={styles.text}>
-                        Tổng tiền: {item.totalPrice.toLocaleString('vi-VN')} vnđ
-                    </Paragraph>
-                    {service && <Paragraph style={styles.text}>Dịch vụ: {service.name}</Paragraph>} 
-                    <Button onPress={() => navigation.navigate('OrderDetail', { order: item })}>Xem chi tiết</Button>
+                    <View style={styles.cardHeader}>
+                        <Text style={[styles.statusText, { color: statusStyle.statusColor }]}>
+                            {item.state === 'delivering' ? 'Đang giao' :
+                             item.state === 'delivered' ? 'Đã giao' :
+                             item.state === 'canceled' ? 'Đã huỷ' :
+                             'Chưa thanh toán'}
+                        </Text>
+                        <Text style={styles.dateText}>
+                            {item.datetime ? item.datetime.toDate().toLocaleString() : 'Không xác định'}
+                        </Text>
+                    </View>
+
+                    <View style={styles.cardBody}>
+                        <Text style={styles.priceText}>
+                            <Text style={styles.priceValue}>{item.totalPrice.toLocaleString('vi-VN')}</Text>
+                            <Text style={styles.priceCurrency}> vnđ</Text>
+                        </Text>
+                        {service && (
+                            <Text style={styles.serviceText}>
+                                {service.name}
+                            </Text>
+                        )}
+                    </View>
+
+                    <TouchableOpacity 
+                        style={styles.detailButton}
+                        onPress={() => navigation.navigate('OrderDetail', { order: item })}
+                    >
+                        <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+                    </TouchableOpacity>
                 </Card.Content>
             </Card>
         );
@@ -155,6 +194,8 @@ const Appointments = () => {
                 data={appointments}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
+                contentContainerStyle={styles.listContainer}
+                showsVerticalScrollIndicator={false}
             />
         </View>
     )
@@ -162,57 +203,95 @@ const Appointments = () => {
 
 export default Appointments;
 const styles = StyleSheet.create({
-    text: {
-        fontSize: 17, 
-        fontWeight: "bold",
-        paddingVertical: 5, // Thêm padding dọc để tránh bị mất phần trên
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
     },
-    redText: { // Màu đỏ cho trạng thái "Đang giao"
-        color: 'red',
-        fontSize: 26, // Kích thước lớn hơn
-        fontWeight: "bold",
-    },
-    greenText: { // Màu xanh lá cho trạng thái "Đã giao"
-        color: 'green',
-        fontSize: 26,
-        fontWeight: "bold",
-    },
-    canceledText: { // Màu xám cho trạng thái "Đã huỷ"
-        color: 'gray',
-        fontSize: 26,
-        fontWeight: "bold",
-    },
-    defaultText: { // Màu mặc định cho các trạng thái khác
-        color: 'black',
-        fontSize: 26, // Kích thước lớn hơn
-        fontWeight: "bold",
-    },
-    largeText: { // Thêm kiểu dáng cho trạng thái "Đang giao"
-        fontSize: 22, // Kích thước lớn hơn
-        fontWeight: "bold",
+    header: {
+        backgroundColor: colors.primary,
+        color: colors.white,
+        // ...
     },
     card: {
-        margin: 10,
+        marginHorizontal: 15,
+        marginVertical: 8,
+        borderRadius: 10,
+        backgroundColor: colors.white,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+    },
+    cardHeader: {
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    statusText: {
+        fontSize: 20,
+        fontWeight: '700',
+        marginBottom: 4,
+    },
+    dateText: {
+        fontSize: 14,
+        color: '#666',
+        fontWeight: '500',
+    },
+    cardBody: {
+        marginVertical: 12,
+    },
+    priceText: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 8,
+    },
+    priceValue: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#333',
+    },
+    priceCurrency: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#666',
+    },
+    serviceText: {
+        fontSize: 16,
+        color: '#666',
+        fontWeight: '500',
+    },
+    detailButton: {
+        backgroundColor: '#fff',
+        padding: 10,
         borderRadius: 8,
-        elevation: 3,
-        backgroundColor: '#E0EEE0',
+        alignItems: 'center',
+        marginTop: 8,
     },
-    deliveringText: {
-        fontSize: 26,
-        color: 'blue', // Blue for "Đang giao"
+    detailButtonText: {
+        color: '#1976D2',
+        fontWeight: '600',
+        fontSize: 15,
     },
-    canceledText: {
-        fontSize: 26,
-        color: 'red', // Red for "Đã huỷ"
+    headerContainer: {
+        backgroundColor: colors.background,
+        padding: 15,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
     },
-    defaultText: {
-        fontSize: 26,
-        color: 'black', // Default color
+    headerText: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#fff',
+        textAlign: 'center',
     },
-    status: {
-        fontSize: 20, // Increase font size
-        fontWeight: 'bold',
-        marginBottom: 10,
-        fontFamily: 'System', // Use a system font that supports Vietnamese
+    listContainer: {
+        paddingVertical: 10,
     },
 });

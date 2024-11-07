@@ -74,6 +74,7 @@ const Appointment = ({navigation, route }) => {
                         <CheckBox
                             value={selectedOptions.some(option => option.id === item.id)} 
                             onValueChange={() => toggleOption(item.id)}
+                            tintColors={{ true: '#ff6347', false: '#777' }}
                         />
                         <Text style={styles.optionTitle}>{item.OptionName}</Text>
                         <Text style={styles.optionPrice}>
@@ -98,42 +99,41 @@ const Appointment = ({navigation, route }) => {
                                 {Number(service && service.price).toLocaleString('vi-VN')} ₫
                             </Text>
                         </View>
-                        <DatePicker
-                            modal
-                            open={open}
-                            date={datetime}
-                            onConfirm={(date) => {
-                                setOpen(false)
-                                setDatetime(date)
-                            }}
-                            onCancel={() => setOpen(false)}
-                        />
-                        <Text style={styles.totalOptionPrice}>Tổng giá tùy chọn: {optionPrice.toLocaleString('vi-VN')} ₫</Text> 
-                        <Text style={styles.totalServicePrice}>
-                            Tổng giá dịch vụ: {totalPrice.toLocaleString('vi-VN')} ₫
-                        </Text> 
+                        
+                        <View style={styles.priceContainer}>
+                            <Text style={styles.totalOptionPrice}>
+                                Tổng giá tùy chọn: {optionPrice.toLocaleString('vi-VN')} ₫
+                            </Text> 
+                            <Text style={styles.totalServicePrice}>
+                                Tổng giá dịch vụ: {totalPrice.toLocaleString('vi-VN')} ₫
+                            </Text>
+                        </View>
                     </View>
                 }
+                contentContainerStyle={styles.listContent}
             />
             <View style={styles.footer}>
                 <View style={styles.quantityContainer}>
                     <TouchableOpacity 
                         onPress={() => setQuantity(Math.max(1, quantity - 1))}
-                        style={styles.quantityButtonContainer} // New style for button container
+                        style={styles.quantityButton}
                     >
-                        <Text style={styles.quantityButton}>-</Text>
+                        <Text style={styles.quantityButtonText}>−</Text>
                     </TouchableOpacity>
-                    <View style={styles.quantityDisplayContainer}> 
-                        <Text style={styles.quantityText}>{quantity}</Text>
-                    </View>
+                    
+                    <Text style={styles.quantityText}>{quantity}</Text>
+                    
                     <TouchableOpacity 
                         onPress={() => setQuantity(quantity + 1)}
-                        style={styles.quantityButtonContainer} // New style for button container
+                        style={styles.quantityButton}
                     >
-                        <Text style={styles.quantityButton}>+</Text>
+                        <Text style={styles.quantityButtonText}>+</Text>
                     </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={() => handleAddToCart(service)} style={styles.addToCartButton}>
+                <TouchableOpacity 
+                    onPress={() => handleAddToCart(service)} 
+                    style={styles.addToCartButton}
+                >
                     <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
                 </TouchableOpacity>
             </View>
@@ -144,67 +144,46 @@ const Appointment = ({navigation, route }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f0f0f0", // Slightly lighter background
+        backgroundColor: "#f8f9fa",
+    },
+    listContent: {
+        paddingBottom: 20,
     },
     footer: {
         paddingVertical: 15,
-        paddingHorizontal: 25,
-        backgroundColor: '#ffffff', // White background for contrast
+        paddingHorizontal: 20,
+        backgroundColor: '#ffffff',
         borderTopWidth: 1,
-        borderColor: '#ddd',
-    },
-    quantityContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 0, // Reduce top margin
-        marginBottom: 10, // Optional: adjust bottom margin separately
-    },
-    quantityButton: {
-        fontSize: 18, // Decrease font size for smaller display
-        color: 'white',
-        paddingHorizontal: 15,
-    },
-    quantityText: {
-        fontSize: 24, // Increase font size for larger display
-        color: '#333',
-    },
-    addToCartButton: {
-        backgroundColor: '#ff6347',
-        paddingVertical: 10, // Reduced padding
-        borderRadius: 10, // Slightly smaller radius
-        alignItems: 'center',
-        marginVertical: 0, // Removed vertical margin
-        elevation: 3, // Reduced shadow
+        borderColor: '#eee',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-    },
-    addToCartText: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: 'white',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 5,
     },
     imageContainer: {
-        marginBottom: 25,
-        paddingHorizontal: 20,
+        marginBottom: 20,
+        paddingHorizontal: 15,
     },
     image: {
-        height: 250,
+        height: 280,
         width: '100%',
-        borderRadius: 12,
+        borderRadius: 15,
     },
     serviceInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 25,
-        paddingHorizontal: 25,
+        backgroundColor: '#fff',
+        padding: 20,
+        marginHorizontal: 15,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     serviceTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
+        fontSize: 24,
+        fontWeight: '700',
         color: '#333',
     },
     servicePrice: {
@@ -251,24 +230,59 @@ const styles = StyleSheet.create({
         marginBottom: 25,
         paddingHorizontal: 25,
     },
-    quantityButtonContainer: {
-        backgroundColor: '#ff6347',
-        borderRadius: 5,
-        width: 40, // Set width to make it square
-        height: 40, // Set height to make it square
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginHorizontal: 5,
-    },
-    quantityDisplayContainer: {
-        minWidth: 40,
+    quantityContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#fff',
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        paddingVertical: 5,
+        borderRadius: 8,
+        padding: 5,
+        marginBottom: 15,
+    },
+    quantityButton: {
+        backgroundColor: '#ff6347',
+        width: 35,
+        height: 35,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    quantityButtonText: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    quantityText: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginHorizontal: 20,
+        minWidth: 30,
+        textAlign: 'center',
+    },
+    addToCartButton: {
+        backgroundColor: '#ff6347',
+        paddingVertical: 10, // Reduced padding
+        borderRadius: 10, // Slightly smaller radius
+        alignItems: 'center',
+        marginVertical: 0, // Removed vertical margin
+        elevation: 3, // Reduced shadow
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+    },
+    addToCartText: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: 'white',
     },
 });
 

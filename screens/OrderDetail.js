@@ -188,7 +188,7 @@ const OrderDetail = ({ route, navigation }) => {
                                 state: 'canceled'
                             }));
                             
-                            Alert.alert('Thành công', 'Đơn hàng đã được huỷ');
+                            Alert.alert('Thành công', 'Đơn hàng  đã được huỷ');
                         }
                     }
                 ]
@@ -237,7 +237,9 @@ const OrderDetail = ({ route, navigation }) => {
                             }
                         </Text>
                         <Text style={styles.datetime}>Thời gian: {orderData.datetime ? orderData.datetime.toDate().toLocaleString() : 'Không xác định'}</Text>
-                        <Text style={styles.totalPrice}>Tổng tiền: {orderData.totalPrice?.toLocaleString('vi-VN')} vnđ</Text>
+                        <Text style={styles.totalPrice}>
+                            Tổng tiền: {orderData.totalPrice?.toLocaleString('vi-VN')} đ
+                        </Text>
                         <Text style={styles.summaryTitle}>Tóm tắt đơn hàng:</Text>
                         {Array.isArray(orderData.services) ? (
                             orderData.services.map((service, index) => (
@@ -263,11 +265,11 @@ const OrderDetail = ({ route, navigation }) => {
             </ScrollView>
             <View style={styles.buttonContainer}>
                 {orderData && (!orderData.state || ['new', 'pending'].includes(orderData.state)) && !isStaff && (
-                    <>
+                    <View style={styles.buttonRow}>
                         <Button 
                             mode="contained" 
                             onPress={handlePayment}
-                            style={styles.paymentButton}
+                            style={[styles.button, styles.paymentButton]}
                             labelStyle={styles.buttonText}
                         >
                             Thanh toán ngay
@@ -276,13 +278,13 @@ const OrderDetail = ({ route, navigation }) => {
                         <Button 
                             mode="contained" 
                             onPress={handleCancelOrder}
-                            style={styles.cancelButton}
+                            style={[styles.button, styles.cancelButton]}
                             labelStyle={styles.buttonText}
                             color="#FF3B30"
                         >
                             Huỷ đơn hàng
                         </Button>
-                    </>
+                    </View>
                 )}
                 
                 {isStaff && orderData?.state === 'delivering' && (
@@ -290,9 +292,9 @@ const OrderDetail = ({ route, navigation }) => {
                         mode="contained" 
                         onPress={handleDeliveryMap}
                         style={styles.deliveredButton}
-                        labelStyle={styles.buttonText}
+                        labelStyle={styles.deliveryButtonText}
                     >
-                        Bản đồ giao hàng
+                        Bắt đầu giao hàng
                     </Button>
                 )}
             </View>
@@ -305,124 +307,140 @@ export default OrderDetail;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        backgroundColor: 'white',
+        padding: 16,
+        backgroundColor: '#F5F7FA',
     },
     title: {
-        fontSize: 26,
-        fontWeight: 'bold',
-        marginBottom: 20,
+        fontSize: 28,
+        fontWeight: '800',
+        marginBottom: 24,
+        color: '#1A237E',
+        textAlign: 'center',
+        letterSpacing: 0.5,
     },
     orderDetails: {
-        backgroundColor: '#f9f9f9',
-        borderRadius: 10,
-        padding: 20,
-        marginVertical: 15,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 24,
+        marginVertical: 12,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
+        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
     },
     status: {
         fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 10,
+        fontWeight: '700',
+        marginBottom: 16,
+        color: '#1976D2',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        textAlign: 'center',
+        backgroundColor: '#E3F2FD',
+        padding: 8,
+        borderRadius: 8,
     },
     datetime: {
         fontSize: 16,
-        color: '#555',
-        marginBottom: 10,
+        color: '#546E7A',
+        marginBottom: 16,
+        textAlign: 'center',
+        fontWeight: '500',
     },
     totalPrice: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 15,
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#1976D2',
+        textAlign: 'left',
+        marginVertical: 16,
+        letterSpacing: 0.5,
     },
     summaryTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginBottom: 15,
+        fontSize: 20,
+        fontWeight: '700',
+        marginBottom: 16,
+        color: '#37474F',
+        letterSpacing: 0.5,
     },
     serviceContainer: {
-        marginBottom: 15,
-        padding: 15,
-        backgroundColor: '#fff',
-        borderRadius: 8,
+        marginBottom: 16,
+        padding: 16,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 4,
     },
     serviceTitle: {
         fontSize: 18,
-        fontWeight: '500',
+        fontWeight: '600',
+        color: '#37474F',
+        marginBottom: 8,
     },
     optionTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginTop: 5,
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#546E7A',
+        marginTop: 8,
+        marginBottom: 4,
     },
     option: {
         fontSize: 14,
-        color: '#333',
+        color: '#78909C',
+        marginLeft: 8,
+        marginBottom: 4,
     },
     buttonContainer: {
-        marginTop: 'auto', // Pushes the buttons to the bottom
-        paddingVertical: 20,
+        marginTop: 'auto',
+        paddingVertical: 16,
+        paddingHorizontal: 16,
     },
-    buttonText: {
-        fontSize: 18, // Increase font size
-        fontWeight: 'bold', // Optional: make text bold
+    buttonRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    button: {
+        flex: 1,  // Để các nút có chiều rộng bằng nhau
+        paddingVertical: 8,
+        borderRadius: 12,
     },
     paymentButton: {
-        marginBottom: 10,
         backgroundColor: '#2196F3',
-        paddingVertical: 10,
-        borderRadius: 5,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-        elevation: 3,
     },
     cancelButton: {
-        backgroundColor: '#FF3B30',
-        paddingVertical: 10,
-        borderRadius: 5,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
+        backgroundColor: '#FF4444',
+    },
+    deliveredButton: {
+        backgroundColor: '#66BB6A',
+        paddingVertical: 16,
+        borderRadius: 16,
+        elevation: 4,
+        shadowColor: '#66BB6A',
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
-        shadowRadius: 3,
-        elevation: 3,
+        shadowRadius: 8,
+        marginTop: 20,
+    },
+    deliveryButtonText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    buttonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#FFFFFF',
     },
     scrollView: {
         flexGrow: 1,
-    },
-    deliveredButton: {
-        backgroundColor: '#4CAF50', // Màu xanh lá
-        paddingVertical: 10,
-        borderRadius: 5,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-        elevation: 3,
     },
 });

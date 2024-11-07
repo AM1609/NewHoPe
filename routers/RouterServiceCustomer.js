@@ -1,7 +1,7 @@
 import { createStackNavigator } from "@react-navigation/stack";
 import ServicesCustomer from '../screens/ServicesCustomer';
 import { useMyContextProvider } from "../index";
-import Appointment from "../screens/Home";
+import Appointment from "../screens/Product";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { Image } from "react-native";
 import ChangePassword from "../screens/ChangePassword";
@@ -118,11 +118,7 @@ const RouterServiceCustomer = ({ navigation }) => {
                 options={{ 
                     title: "Thanh toán ZaloPay", 
                     headerShown: true,
-                    headerLeft: () => (
-                        <TouchableOpacity onPress={() => navigation.navigate("Cart")}>
-                            <Image source={require('../assets/back.png')} style={{ width: 24, height: 24, marginLeft: 10 }} />
-                        </TouchableOpacity>
-                    ),
+                    
                     tabBarVisible: false,
                     tabBarStyle: { display: 'none' },
                     tabBarButton: () => null,

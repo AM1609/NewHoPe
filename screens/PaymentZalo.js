@@ -43,17 +43,18 @@ export default function PaymentZalo({ navigation, route }) {
   }, [userInfo, userLogin]);
 
   useLayoutEffect(() => {
-    // Hide both tabBar and bottomBar
-    const parent = navigation.getParent();
-    parent?.setOptions({
-      tabBarStyle: { display: 'none' },
-      bottomBar: { display: 'none' }
+    // Ẩn navigation bar
+    navigation.getParent()?.setOptions({
+      tabBarStyle: {
+        display: 'none'
+      }
     });
-    
-    // Cleanup function to restore the tabBar when leaving
+
+    // Cleanup function để khôi phục navigation bar khi rời khỏi màn hình
     return () => {
-      parent?.setOptions({
-        tabBarStyle: { 
+      navigation.getParent()?.setOptions({
+        tabBarStyle: {
+          display: 'flex',
           height: 60,
           position: 'absolute',
           bottom: 16,
@@ -322,26 +323,54 @@ export default function PaymentZalo({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Chọn phương thức thanh toán</Text>
+      <Text style={styles.title}>Thanh toán với ZaloPay</Text>
       
-      {/* Display Order Information */}
-      <View style={styles.orderInfo}>
-        <Text style={styles.orderTitle}>Thông tin đơn hàng:</Text>
-        <Text style={styles.orderText}>Số tiền: {formatCurrency(totalAmount)} VND</Text>
-        <Text style={styles.orderText}>Mã đơn hàng: {appointmentId || 'N/A'}</Text>
-        <Text style={styles.orderText}>Địa chỉ: {userDetails.address}</Text>
-        <Text style={styles.orderText}>SĐT: {userDetails.phoneNumber}</Text>
+      <View style={styles.orderCard}>
+        <Text style={styles.cardTitle}>Thông tin đơn hàng</Text>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Số tiền:</Text>
+          <Text style={styles.amount}>{formatCurrency(totalAmount)} VNĐ</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Mã đơn hàng:</Text>
+          <Text style={styles.value}>{appointmentId || 'N/A'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Địa chỉ:</Text>
+          <Text style={styles.value}>{userDetails.address}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Số điện thoại:</Text>
+          <Text style={styles.value}>{userDetails.phoneNumber}</Text>
+        </View>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handlePayment}>
-        <Text style={styles.buttonText}>Thanh toán với ZaloPay</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={checkTransactionStatus}>
-        <Text style={styles.buttonText}>Kiểm tra trạng thái giao dịch</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
-        <Text style={styles.cancelButtonText}>Hủy</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={[styles.button, styles.primaryButton]}
+          onPress={handlePayment}
+        >
+          <Text style={styles.buttonText}>Thanh toán với ZaloPay</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.secondaryButton]}
+          onPress={checkTransactionStatus}
+        >
+          <Text style={styles.buttonText}>Kiểm tra trạng thái giao dịch</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.cancelButton]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.buttonText}>Hủy</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -349,69 +378,108 @@ export default function PaymentZalo({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F7FA',
     padding: 20,
   },
+  
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    fontWeight: '700',
+    color: '#1A237E',
+    marginBottom: 24,
+    textAlign: 'center',
   },
-  orderInfo: {
-    marginVertical: 20,
+  
+  orderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    width: '100%',
+    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 5,
   },
-  orderTitle: {
+  
+  cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
+    fontWeight: '600',
+    color: '#37474F',
+    marginBottom: 16,
     textAlign: 'center',
   },
-  orderText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 8,
-    paddingHorizontal: 10,
+  
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
+  
+  label: {
+    fontSize: 16,
+    color: '#546E7A',
+    flex: 1,
+  },
+  
+  value: {
+    fontSize: 16,
+    color: '#37474F',
+    flex: 2,
+    textAlign: 'right',
+  },
+  
+  amount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1976D2',
+    flex: 2,
+    textAlign: 'right',
+  },
+  
+  buttonContainer: {
+    gap: 12,
+    marginTop: 'auto',
+    marginBottom: 20,
+  },
+  
   button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 10,
-    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+  
+  primaryButton: {
+    backgroundColor: '#2196F3',
   },
+  
+  secondaryButton: {
+    backgroundColor: '#1976D2',
+  },
+  
   cancelButton: {
-    backgroundColor: '#ff3b30',
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 10,
-    width: '100%',
-    alignItems: 'center',
+    backgroundColor: '#FF4444',
   },
-  cancelButtonText: {
-    color: 'white',
+  
+  buttonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

@@ -8,6 +8,18 @@ const PaymentQR = ({ route, navigation }) => {
     const [qrImage, setQrImage] = useState(null);
 
     useEffect(() => {
+        navigation.setOptions({
+            tabBarStyle: { display: 'none' }  // Ẩn bottom tab bar
+        });
+
+        return () => {
+            navigation.setOptions({
+                tabBarStyle: { display: 'flex' }  // Hiện lại bottom tab bar khi rời khỏi màn hình
+            });
+        };
+    }, [navigation]);
+
+    useEffect(() => {
         generateQR();
     }, [amount]);
 
@@ -92,7 +104,7 @@ const PaymentQR = ({ route, navigation }) => {
 
             <Button
                 mode="contained"
-                onPress={() => navigation.navigate('Appointment')}
+                onPress={() => navigation.navigate('ServicesCustomer')}
                 style={styles.button}
                 labelStyle={styles.buttonText}
             >

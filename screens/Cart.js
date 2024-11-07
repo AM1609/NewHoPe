@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, TextInput, Alert } from 'react-native';
 import { useCart } from "../routers/CartContext"
 import { Button } from 'react-native-paper';
 import { useMyContextProvider } from "../index"
@@ -45,29 +45,38 @@ const Cart = () => {
         <View style={styles.details}>
           <View style={styles.textContainer}>
             <Text style={styles.title}>{truncateTitle(item.title)}</Text>
+            <Text style={styles.price}>{totalItemPrice.toLocaleString('vi-VN')} ₫</Text>
             {item.options && item.options.length > 0 && (
               <View style={styles.optionsContainer}>
                 {item.options.map(option => (
                   <Text key={option.id} style={styles.optionText}>
-                    {option.name}
+                    • {option.name}
                   </Text>
                 ))}
               </View>
             )}
           </View>
-          <View style={styles.bottomContainer}>
-            <Text style={styles.price}>{totalItemPrice.toLocaleString('vi-VN')} vnđ</Text>
+          <View style={styles.actionContainer}>
             <View style={styles.quantityContainer}>
-              <TouchableOpacity onPress={() => decreaseQuantity(item.id, item.options)}>
-                <Text style={styles.quantityButton}>-</Text>
+              <TouchableOpacity 
+                style={styles.quantityButton} 
+                onPress={() => decreaseQuantity(item.id, item.options)}
+              >
+                <Text style={styles.quantityButtonText}>−</Text>
               </TouchableOpacity>
-              <Text>{item.quantity}</Text>
-              <TouchableOpacity onPress={() => increaseQuantity(item.id, item.options)}>
-                <Text style={styles.quantityButton}>+</Text>
+              <Text style={styles.quantityText}>{item.quantity}</Text>
+              <TouchableOpacity 
+                style={styles.quantityButton} 
+                onPress={() => increaseQuantity(item.id, item.options)}
+              >
+                <Text style={styles.quantityButtonText}>+</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => removeFromCart(item.id, item.options)} style={styles.removeButtonContainer}>
-              <Text style={styles.removeButton}>Xóa</Text>
+            <TouchableOpacity 
+              onPress={() => removeFromCart(item.id, item.options)} 
+              style={styles.removeButton}
+            >
+              <Text style={styles.removeButtonText}>Xóa</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -181,6 +190,19 @@ const Cart = () => {
 
   const totalWithDiscount = total - discountValue;
 
+  // Thêm hàm kiểm tra giỏ hàng
+  const checkCartEmpty = () => {
+    if (cart.length === 0) {
+      Alert.alert(
+        'Giỏ hàng trống',
+        'Vui lòng thêm sản phẩm vào giỏ hàng trước khi tiếp tục.',
+        [{ text: 'OK' }]
+      );
+      return true;
+    }
+    return false;
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -201,51 +223,47 @@ const Cart = () => {
           <Text style={styles.applyButtonText}>Áp dụng</Text>
         </TouchableOpacity>
       </View>
-      {/* <Button
-        style={[styles.button, styles.orderButton]}
-        textColor="white"
-        mode="contained"
-        onPress={handleSubmit}
-      >
-        Đặt Hàng
-      </Button> */}
-      {/* <TouchableOpacity
-        style={[styles.button, styles.orderButton]}
-        onPress={handleSubmit}
-      >
-        <Text style={styles.buttonText}>Đặt Hàng</Text>
-      </TouchableOpacity> */}
-      <TouchableOpacity
-        style={[styles.button, styles.clearButton]}
-        onPress={clearCart}
-      >
-        <Text style={styles.buttonText}>Xóa giỏ hàng</Text>
-      </TouchableOpacity>
-      
-      {isEmployee ? (
+      <View style={styles.buttonContainer}>
+        {isEmployee ? (
+          <TouchableOpacity
+            style={[styles.button, styles.orderButton]}
+            onPress={() => {
+              if (!checkCartEmpty()) {
+                navigation.navigate('PaymentQR', {
+                  orderId: generateOrderId(),
+                  amount: total,
+                  userInfo: userLogin
+                });
+              }
+            }}
+          >
+            <Text style={[styles.buttonText, { color: 'white' }]}>Thanh toán</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.button, styles.orderButton]}
+            onPress={() => {
+              if (!checkCartEmpty()) {
+                navigation.navigate('Map', {
+                  cartItems: cart,
+                  totalAmount: totalWithDiscount,
+                  userInfo: userLogin,
+                  discountValue: discountValue
+                });
+              }
+            }}
+          >
+            <Text style={[styles.buttonText, { color: 'white' }]}>Đặt Hàng</Text>
+          </TouchableOpacity>
+        )}
+        
         <TouchableOpacity
-          style={[styles.button, styles.orderButton]}
-          onPress={() => navigation.navigate('PaymentQR', {
-            orderId: generateOrderId(),
-            amount: total,
-            userInfo: userLogin
-          })}
+          style={[styles.button, styles.clearButton]}
+          onPress={clearCart}
         >
-          <Text style={[styles.buttonText, { color: 'white' }]}>Thanh toán</Text>
+          <Text style={styles.buttonText}>Xóa giỏ hàng</Text>
         </TouchableOpacity>
-      ) : (
-        <TouchableOpacity
-          style={[styles.button, styles.orderButton]}
-          onPress={() => navigation.navigate('Map', {
-            cartItems: cart,
-            totalAmount: totalWithDiscount,
-            userInfo: userLogin,
-            discountValue: discountValue
-          })}
-        >
-          <Text style={[styles.buttonText, { color: 'white' }]}>Đặt Hàng</Text>
-        </TouchableOpacity>
-      )}
+      </View>
     </View>
   );
 };
@@ -253,157 +271,174 @@ const Cart = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f0f0f0",
-    padding: 10,
+    backgroundColor: "#f8f9fa",
+    padding: 15,
   },
   item: {
     flexDirection: 'row',
-    alignItems: 'center',
     padding: 15,
-    marginVertical: 8,
+    marginBottom: 15,
     backgroundColor: '#fff',
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
-    height: 120, // Set a fixed height for uniformity
   },
   image: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
     borderRadius: 8,
     marginRight: 15,
   },
   details: {
     flex: 1,
-    flexDirection: 'column',
     justifyContent: 'space-between',
+  },
+  textContainer: {
+    marginBottom: 10,
   },
   title: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
+    fontWeight: '600',
+    color: '#2d3436',
+    marginBottom: 4,
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ff6b6b',
+    marginBottom: 4,
   },
   optionsContainer: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    paddingVertical: 5,
+    marginTop: 4,
   },
   optionText: {
-    fontSize: 12,
-    color: 'gray',
+    fontSize: 14,
+    color: '#636e72',
+    marginBottom: 2,
+  },
+  actionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end', // Aligns items to the right
-    marginTop: 5,
+    backgroundColor: '#f5f6fa',
+    borderRadius: 8,
+    padding: 4,
   },
   quantityButton: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityButtonText: {
+    color: '#fff',
     fontSize: 18,
-    color: '#ff6347',
-    marginHorizontal: 10,
+    fontWeight: '600',
   },
-  price: {
+  quantityText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ff6347',
-    marginTop: 5,
-  },
-  removeButtonContainer: {
-    alignItems: 'flex-end',
+    fontWeight: '600',
+    marginHorizontal: 12,
+    minWidth: 20,
+    textAlign: 'center',
   },
   removeButton: {
-    color: 'red',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#fee',
+  },
+  removeButtonText: {
+    color: '#ff6b6b',
     fontSize: 14,
+    fontWeight: '600',
   },
   total: {
-    fontSize: 22, // Increased font size for emphasis
-    fontWeight: 'bold',
-    marginVertical: 10,
-    textAlign: 'center',
-    color: '#333',
-  },
-  clearButton: {
-    backgroundColor: 'red',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  clearButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  orderButton: {
-    backgroundColor: 'orange',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  orderButtonText: {
-    color: 'black',
-    fontWeight: 'bold',
-  },
-  textContainer: {
-    marginBottom: 5,
-  },
-  bottomContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  button: {
-    paddingVertical: 8,
-    borderRadius: 20,
-    alignItems: 'center',
-    marginVertical: 10,
-    width: '90%', // Ensures both buttons have the same width
-    alignSelf: 'center',
-  },
-  buttonText: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  header: {
-    // Add any additional styles if needed
-  },
-  mapButton: {
-    backgroundColor: 'blue', // Choose a color for the map button
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 10,
+    fontWeight: '700',
+    color: '#2d3436',
+    textAlign: 'center',
+    marginVertical: 20,
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   promotionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 10,
-    paddingHorizontal: 10,
+    marginBottom: 20,
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   promotionInput: {
     flex: 1,
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    height: 45,
+    backgroundColor: '#f5f6fa',
+    borderRadius: 8,
+    paddingHorizontal: 15,
     marginRight: 10,
+    fontSize: 15,
   },
   applyButton: {
-    backgroundColor: 'green',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#00b894',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
   },
   applyButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10, // Khoảng cách giữa 2 nút
+    marginTop: 10,
+  },
+  button: {
+    flex: 1, // Để 2 nút có độ rộng bằng nhau
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  clearButton: {
+    backgroundColor: '#ff6b6b',
+  },
+  orderButton: {
+    backgroundColor: '#ffa502',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
 

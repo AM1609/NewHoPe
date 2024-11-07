@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Alert, Dimensions } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { View, StyleSheet, Alert, Dimensions, TouchableOpacity, Clipboard } from 'react-native';
+import { Button, Text, IconButton } from 'react-native-paper';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import firestore from '@react-native-firebase/firestore';
@@ -162,13 +162,20 @@ const DeliveryMap = ({ route, navigation }) => {
                 [
                     {
                         text: 'OK',
-                        onPress: () => navigation.goBack()
+                        onPress: () => navigation.navigate('Appointments')
                     }
                 ]
             );
         } catch (error) {
             console.error('Error marking as delivered:', error);
             Alert.alert('Error', 'Không thể cập nhật trạng thái đơn hàng');
+        }
+    };
+
+    const copyToClipboard = (phone) => {
+        if (phone) {
+            Clipboard.setString(phone);
+            Alert.alert('Thành công', 'Đã sao chép số điện thoại');
         }
     };
 
@@ -224,9 +231,19 @@ const DeliveryMap = ({ route, navigation }) => {
                 
                 <View style={styles.infoContainer}>
                     <Text style={styles.infoLabel}>Số điện thoại:</Text>
-                    <Text style={styles.infoText}>
-                        {order?.phone || 'Không có thông tin'}
-                    </Text>
+                    <View style={styles.phoneContainer}>
+                        <Text style={styles.infoText}>
+                            {order?.phone || 'Không có thông tin'}
+                        </Text>
+                        <Button
+                            mode="text"
+                            onPress={() => copyToClipboard(order?.phone)}
+                            style={styles.copyButton}
+                            labelStyle={styles.copyButtonLabel}
+                        >
+                            Copy
+                        </Button>
+                    </View>
                 </View>
                 
                 <Button
@@ -286,6 +303,19 @@ const styles = StyleSheet.create({
         backgroundColor: '#4CAF50',
         paddingVertical: 8,
     },
+    phoneContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    copyButton: {
+        marginVertical: 0,
+        marginLeft: 8,
+    },
+    copyButtonLabel: {
+        fontSize: 14,
+        marginLeft: 4,
+    }
 });
 
 DeliveryMap.navigationOptions = {
