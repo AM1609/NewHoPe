@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useMyContextProvider, login } from '../index';
-import colors from '../screens/colors';
+import colors from '../routers/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Login = ({ navigation }) => {

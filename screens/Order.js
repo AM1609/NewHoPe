@@ -5,7 +5,7 @@ import firestore from '@react-native-firebase/firestore';
 import { Menu, MenuTrigger, MenuOptions, MenuOption } from 'react-native-popup-menu';
 import { useMyContextProvider } from "../index";
 import { useNavigation } from '@react-navigation/native'; // Thêm import này
-import colors from './colors'; // Thêm import này
+import colors from '../routers/colors'; // Thêm import này
 import auth from '@react-native-firebase/auth';
 
 const Appointments = () => {
@@ -122,6 +122,22 @@ const Appointments = () => {
         fetchUserData();
     }, []);
 
+    const formatDateTime = (timestamp) => {
+        if (!timestamp) return '';
+        const date = timestamp.toDate();
+        
+        // Định dạng ngày thành DD/MM/YYYY
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        
+        // Định dạng giờ thành HH:mm
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        
+        return `${day}/${month}/${year}, ${hours}:${minutes}`;
+    };
+
     // show các lch
     const renderItem = ({ item }) => {
         const service = services.find(s => s.id === item.serviceId);
@@ -152,7 +168,7 @@ const Appointments = () => {
                              'Chưa thanh toán'}
                         </Text>
                         <Text style={styles.dateText}>
-                            {item.datetime ? item.datetime.toDate().toLocaleString() : 'Không xác định'}
+                            {formatDateTime(item.datetime)}
                         </Text>
                     </View>
 
@@ -242,12 +258,12 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     cardBody: {
-        marginVertical: 12,
+        marginVertical: 4,
     },
     priceText: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 8,
+        marginVertical: 2,
     },
     priceValue: {
         fontSize: 24,

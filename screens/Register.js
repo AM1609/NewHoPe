@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity,Image } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { createAccount } from '../index';
-import colors from './colors'; // Import the colors module
+import colors from '../routers/colors'; // Import the colors module
 
 
 const Register = ({ navigation }) => {

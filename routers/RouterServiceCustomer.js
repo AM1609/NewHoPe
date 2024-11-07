@@ -1,5 +1,5 @@
 import { createStackNavigator } from "@react-navigation/stack";
-import ServicesCustomer from '../screens/ServicesCustomer';
+import ServicesCustomer from '../screens/Home';
 import { useMyContextProvider } from "../index";
 import Appointment from "../screens/Product";
 import { TouchableOpacity } from "react-native-gesture-handler";
@@ -7,7 +7,7 @@ import { Image } from "react-native";
 import ChangePassword from "../screens/ChangePassword";
 import Appointments from "../screens/Order";
 import OrderDetail from "../screens/OrderDetail";
-import colors from '../screens/colors';
+import colors from './colors';
 import Map from "../screens/Map"; // Import màn hình Map
 import Payment from "../screens/Payment";
 import PaymentZalo from "../screens/PaymentZalo";

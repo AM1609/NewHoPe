@@ -1,4 +1,4 @@
-import colors from './colors';
+import colors from '../routers/colors';
 
 const styles = StyleSheet.create({
     container: {

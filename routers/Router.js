@@ -2,7 +2,7 @@ import {createStackNavigator} from "@react-navigation/stack"
 import Login from "../screens/Login"
 import Register from "../screens/Register"
 import Admin from "../admin/Admin"
-import Customer from "../screens/Customer"
+import Customer from "./Customer"
 import ForgotPassword from "../screens/ForgotPassword"
 
 

@@ -3,7 +3,7 @@ import { Text } from "react-native-paper";
 import { View, StyleSheet,Button, TouchableOpacity } from "react-native";
 import {logout, useMyContextProvider } from "../index";
 import { NavigationContainer } from "@react-navigation/native";
-import colors from '../screens/colors';
+import colors from '../routers/colors';
 
 const ProfileCustomer = ({navigation}) =>{
     const [controller, dispatch] = useMyContextProvider();

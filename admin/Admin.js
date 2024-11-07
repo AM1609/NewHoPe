@@ -1,7 +1,7 @@
 import React from "react";
 import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import RouterService from "../routers/RouterService";
-import Transaction from "../screens/Transaction";
+import Transaction from "../routers/Transaction";
 
 import Customers from "./Customers";
 

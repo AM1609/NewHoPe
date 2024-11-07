@@ -4,7 +4,7 @@ import { useCart } from "../routers/CartContext"
 import { Button } from 'react-native-paper';
 import { useMyContextProvider } from "../index"
 import firestore from "@react-native-firebase/firestore"
-import colors from '../screens/colors'
+import colors from '../routers/colors'
 import { useNavigation } from '@react-navigation/native'; // Import useNavigation hook
 
 const MAX_TITLE_LENGTH = 20; // Độ dài tối đa của tên sản phẩm
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff6b6b',
   },
   orderButton: {
-    backgroundColor: '#ffa502',
+    backgroundColor: '#00b894',
   },
   buttonText: {
     fontSize: 16,

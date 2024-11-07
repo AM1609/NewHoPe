@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import firestore from "@react-native-firebase/firestore";
-import colors from '../screens/colors'; // Ensure you import the colors module
+import colors from '../routers/colors'; // Ensure you import the colors module
 
 const ForgotPassword = ({ navigation }) => {
   const [email, setEmail] = useState('');

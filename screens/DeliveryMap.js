@@ -4,6 +4,9 @@ import { Button, Text, IconButton } from 'react-native-paper';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+
+import { useMyContextProvider } from "../index";
 
 const GEOAPIFY_API_KEY = 'be8283f0ca404169924653620c942bfa';
 
@@ -14,7 +17,8 @@ const DeliveryMap = ({ route, navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [routeCoordinates, setRouteCoordinates] = useState([]);
     const watchIdRef = useRef(null);
-
+    const [controller] = useMyContextProvider();
+    const { userLogin } = controller;
     const getRouteFromGeoapify = async (start, end) => {
         try {
             const response = await fetch(
@@ -154,6 +158,7 @@ const DeliveryMap = ({ route, navigation }) => {
                 .update({
                     state: 'delivered',
                     deliveredAt: firestore.FieldValue.serverTimestamp(),
+                    deliveredBy: auth().currentUser?.email || null,
                 });
             
             Alert.alert(

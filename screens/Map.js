@@ -7,7 +7,6 @@ import { useRoute } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 
 const GEOAPIFY_API_KEY = 'be8283f0ca404169924653620c942bfa';
-const GOOGLE_MAPS_API_KEY = 'AIzaSyAY147ZFhEL1fg7jQ-CdrK-sncScdCucG4'; // Thêm Google Maps API key của bạn
 
 const StoreLocationScreen = () => {
   const [currentPosition, setCurrentPosition] = useState(null);
@@ -21,48 +20,6 @@ const StoreLocationScreen = () => {
   const route = useRoute();
   const { cartItems = [], totalAmount = 0, userInfo = {}, discountValue = 0 } = route.params || {};
   const navigation = useNavigation();
-
-  const getCoordinatesFromAddress = async (address) => {
-    try {
-      if (!address.trim()) {
-        Alert.alert('Error', 'Vui lòng nhập địa chỉ');
-        return;
-      }
-
-      const response = await fetch(
-        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&apiKey=${GEOAPIFY_API_KEY}&lang=vi`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      
-      const data = await response.json();
-      
-      if (data.features && data.features.length > 0) {
-        const [longitude, latitude] = data.features[0].geometry.coordinates;
-        setCurrentPosition({ latitude, longitude });
-
-        const addressData = data.features[0].properties;
-        const formattedAddress = [
-          addressData.housenumber,
-          addressData.street,
-          addressData.district,
-          addressData.city,
-          addressData.country
-        ].filter(Boolean).join(', ');
-        
-        setAddress(formattedAddress);
-        console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
-        console.log(`Address: ${formattedAddress}`);
-      } else {
-        Alert.alert('Error', 'Không tìm thấy địa chỉ. Vui lòng thử lại với địa chỉ khác.');
-      }
-    } catch (error) {
-      console.error('Error details:', error);
-      Alert.alert('Error', 'Không thể lấy tọa độ. Vui lòng kiểm tra kết nối mạng và thử lại.');
-    }
-  };
 
   useEffect(() => {
     const requestLocationPermission = async () => {
