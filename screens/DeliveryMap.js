@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Alert, Dimensions, TouchableOpacity, Clipboard } from 'react-native';
+import { View, StyleSheet, Alert, Dimensions, TouchableOpacity, Clipboard, Animated } from 'react-native';
 import { Button, Text, IconButton } from 'react-native-paper';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
@@ -19,6 +19,11 @@ const DeliveryMap = ({ route, navigation }) => {
     const watchIdRef = useRef(null);
     const [controller] = useMyContextProvider();
     const { userLogin } = controller;
+    const [shipperLocation, setShipperLocation] = useState(null);
+    const mapRef = useRef(null);
+    const [isExpanded, setIsExpanded] = useState(true);
+    const animatedHeight = useRef(new Animated.Value(1)).current;
+
     const getRouteFromGeoapify = async (start, end) => {
         try {
             const response = await fetch(
@@ -79,15 +84,6 @@ const DeliveryMap = ({ route, navigation }) => {
                     longitudeDelta: 0.01,
                 };
                 setCurrentLocation(currentPos);
-                
-                if (order?.location) {
-                    const orderPos = {
-                        latitude: order.location.latitude,
-                        longitude: order.location.longitude
-                    };
-                    setOrderLocation(orderPos);
-                    getRouteFromGeoapify(currentPos, orderPos);
-                }
                 setIsLoading(false);
             },
             error => {
@@ -97,60 +93,86 @@ const DeliveryMap = ({ route, navigation }) => {
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
         );
 
-        watchIdRef.current = Geolocation.watchPosition(
-            position => {
-                const { latitude, longitude } = position.coords;
-                const newLocation = {
-                    latitude,
-                    longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                };
-                setCurrentLocation(newLocation);
-                
-                updateLocationInFirestore(latitude, longitude);
-                
-                if (order?.location) {
-                    getRouteFromGeoapify(newLocation, {
+        if (userLogin?.role === 'staff') {
+            watchIdRef.current = Geolocation.watchPosition(
+                position => {
+                    const { latitude, longitude } = position.coords;
+                    const newLocation = {
+                        latitude,
+                        longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                    };
+                    setCurrentLocation(newLocation);
+                    updateLocationInFirestore(latitude, longitude);
+                },
+                error => console.error(error),
+                { 
+                    enableHighAccuracy: true, 
+                    distanceFilter: 10,
+                    interval: 5000,
+                    fastestInterval: 3000
+                }
+            );
+        }
+
+        const unsubscribe = firestore()
+            .collection('Appointments')
+            .doc(orderId)
+            .onSnapshot(doc => {
+                const data = doc.data();
+                if (data?.shipperLocation && order?.location) {
+                    const { latitude, longitude } = data.shipperLocation;
+                    const shipperPos = {
+                        latitude,
+                        longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                    };
+                    setShipperLocation(shipperPos);
+                    
+                    const destinationPos = {
                         latitude: order.location.latitude,
                         longitude: order.location.longitude
-                    });
+                    };
+                    setOrderLocation(destinationPos);
+                    getRouteFromGeoapify(shipperPos, destinationPos);
                 }
-            },
-            error => console.error(error),
-            { 
-                enableHighAccuracy: true, 
-                distanceFilter: 10,
-                interval: 5000,
-                fastestInterval: 3000
-            }
-        );
+            });
 
         return () => {
             if (watchIdRef.current !== null) {
                 Geolocation.clearWatch(watchIdRef.current);
             }
+            unsubscribe();
         };
     }, []);
 
     const updateLocationInFirestore = async (latitude, longitude) => {
         try {
-            await firestore()
-                .collection('Appointments')
-                .doc(orderId)
-                .update({
-                    shipperLocation: {
-                        latitude,
-                        longitude,
-                        timestamp: firestore.FieldValue.serverTimestamp(),
-                    },
-                });
+            if (userLogin?.role === 'staff') {
+                await firestore()
+                    .collection('Appointments')
+                    .doc(orderId)
+                    .update({
+                        shipperLocation: {
+                            latitude,
+                            longitude,
+                            timestamp: firestore.FieldValue.serverTimestamp(),
+                        },
+                    });
+            }
         } catch (error) {
             console.error('Error updating location:', error);
         }
     };
 
     const handleDelivered = async () => {
+        if (userLogin?.role !== 'staff') {
+            Alert.alert('Thông báo', 'Bạn không có quyền thực hiện thao tác này');
+            return;
+        }
+
         try {
             await firestore()
                 .collection('Appointments')
@@ -184,6 +206,78 @@ const DeliveryMap = ({ route, navigation }) => {
         }
     };
 
+    const getRegionForCoordinates = (points) => {
+        if (points.length === 0) return null;
+
+        let minLat = points[0].latitude;
+        let maxLat = points[0].latitude;
+        let minLng = points[0].longitude;
+        let maxLng = points[0].longitude;
+
+        points.forEach(point => {
+            minLat = Math.min(minLat, point.latitude);
+            maxLat = Math.max(maxLat, point.latitude);
+            minLng = Math.min(minLng, point.longitude);
+            maxLng = Math.max(maxLng, point.longitude);
+        });
+
+        const midLat = (minLat + maxLat) / 2;
+        const midLng = (minLng + maxLng) / 2;
+
+        const deltaLat = (maxLat - minLat) * 1.5;
+        const deltaLng = (maxLng - minLng) * 1.5;
+
+        return {
+            latitude: midLat,
+            longitude: midLng,
+            latitudeDelta: Math.max(deltaLat, 0.01),
+            longitudeDelta: Math.max(deltaLng, 0.01),
+        };
+    };
+
+    const fitMapToMarkers = () => {
+        if (mapRef.current && shipperLocation && orderLocation) {
+            mapRef.current.fitToCoordinates(
+                [
+                    {
+                        latitude: shipperLocation.latitude,
+                        longitude: shipperLocation.longitude
+                    },
+                    {
+                        latitude: orderLocation.latitude,
+                        longitude: orderLocation.longitude
+                    }
+                ],
+                {
+                    edgePadding: {
+                        top: 50,
+                        right: 50,
+                        bottom: 50,
+                        left: 50
+                    },
+                    animated: true
+                }
+            );
+        }
+    };
+
+    useEffect(() => {
+        if (shipperLocation && orderLocation) {
+            fitMapToMarkers();
+        }
+    }, [shipperLocation, orderLocation]);
+
+    const toggleBottomSheet = () => {
+        const toValue = isExpanded ? 0 : 1;
+        setIsExpanded(!isExpanded);
+        
+        Animated.spring(animatedHeight, {
+            toValue,
+            useNativeDriver: false,
+            bounciness: 4
+        }).start();
+    };
+
     if (isLoading) {
         return (
             <View style={styles.container}>
@@ -195,15 +289,29 @@ const DeliveryMap = ({ route, navigation }) => {
     return (
         <View style={styles.container}>
             <MapView
+                ref={mapRef}
                 provider={PROVIDER_GOOGLE}
                 style={styles.map}
-                initialRegion={currentLocation}
+                initialRegion={{
+                    latitude: 10.762622,  // Default cho Việt Nam
+                    longitude: 106.660172,
+                    latitudeDelta: 0.1,
+                    longitudeDelta: 0.1,
+                }}
             >
-                {currentLocation && (
+                {userLogin?.role === 'staff' && currentLocation && (
                     <Marker
                         coordinate={currentLocation}
                         title="Vị trí của bạn"
                         description="Shipper"
+                        pinColor="blue"
+                    />
+                )}
+                {shipperLocation && (
+                    <Marker
+                        coordinate={shipperLocation}
+                        title="Vị trí shipper"
+                        description="Shipper đang giao hàng"
                         pinColor="blue"
                     />
                 )}
@@ -226,39 +334,59 @@ const DeliveryMap = ({ route, navigation }) => {
                 )}
             </MapView>
             
-            <View style={styles.bottomContainer}>
+            <Animated.View style={[
+                styles.bottomContainer,
+                {
+                    maxHeight: animatedHeight.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['20%', '35%']
+                    })
+                }
+            ]}>
+                <TouchableOpacity 
+                    onPress={toggleBottomSheet}
+                    style={styles.handleContainer}
+                >
+                    <View style={styles.handle} />
+                </TouchableOpacity>
+
                 <View style={styles.infoContainer}>
                     <Text style={styles.infoLabel}>Địa chỉ giao:</Text>
-                    <Text style={styles.infoText}>
+                    <Text style={styles.infoText} numberOfLines={isExpanded ? undefined : 1}>
                         {order?.address || 'Không có thông tin'}
                     </Text>
                 </View>
                 
-                <View style={styles.infoContainer}>
-                    <Text style={styles.infoLabel}>Số điện thoại:</Text>
-                    <View style={styles.phoneContainer}>
-                        <Text style={styles.infoText}>
-                            {order?.phone || 'Không có thông tin'}
-                        </Text>
-                        <Button
-                            mode="text"
-                            onPress={() => copyToClipboard(order?.phone)}
-                            style={styles.copyButton}
-                            labelStyle={styles.copyButtonLabel}
-                        >
-                            Copy
-                        </Button>
-                    </View>
-                </View>
-                
-                <Button
-                    mode="contained"
-                    onPress={handleDelivered}
-                    style={styles.deliveredButton}
-                >
-                    Xác nhận đã giao hàng
-                </Button>
-            </View>
+                {isExpanded && (
+                    <>
+                        <View style={styles.infoContainer}>
+                            <Text style={styles.infoLabel}>Số điện thoại:</Text>
+                            <View style={styles.phoneContainer}>
+                                <Text style={styles.infoText}>
+                                    {order?.phone || 'Không có thông tin'}
+                                </Text>
+                                <Button
+                                    mode="text"
+                                    onPress={() => copyToClipboard(order?.phone)}
+                                    style={styles.copyButton}
+                                >
+                                    Copy
+                                </Button>
+                            </View>
+                        </View>
+                        
+                        {userLogin?.role === 'staff' && (
+                            <Button
+                                mode="contained"
+                                onPress={handleDelivered}
+                                style={styles.deliveredButton}
+                            >
+                                Xác nhận đã giao hàng
+                            </Button>
+                        )}
+                    </>
+                )}
+            </Animated.View>
         </View>
     );
 };
@@ -278,9 +406,10 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         backgroundColor: 'white',
-        padding: 20,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
+        padding: 20,
+        paddingTop: 10,
         shadowColor: "#000",
         shadowOffset: {
             width: 0,
@@ -290,8 +419,18 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
         elevation: 5,
     },
+    handleContainer: {
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+    handle: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#DEDEDE',
+        borderRadius: 2,
+    },
     infoContainer: {
-        marginBottom: 10,
+        marginBottom: 15,
     },
     infoLabel: {
         fontSize: 14,
@@ -301,12 +440,6 @@ const styles = StyleSheet.create({
     infoText: {
         fontSize: 16,
         color: '#000',
-        fontWeight: '500',
-    },
-    deliveredButton: {
-        marginTop: 15,
-        backgroundColor: '#4CAF50',
-        paddingVertical: 8,
     },
     phoneContainer: {
         flexDirection: 'row',
@@ -315,12 +448,12 @@ const styles = StyleSheet.create({
     },
     copyButton: {
         marginVertical: 0,
-        marginLeft: 8,
     },
-    copyButtonLabel: {
-        fontSize: 14,
-        marginLeft: 4,
-    }
+    deliveredButton: {
+        marginTop: 10,
+        marginBottom: 10,
+        backgroundColor: '#4CAF50',
+    },
 });
 
 DeliveryMap.navigationOptions = {

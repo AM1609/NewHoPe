@@ -167,14 +167,16 @@ const Appointments = () => {
         
         const getStatusStyle = (state) => {
             switch(state) {
+                case 'preparing':
+                    return { backgroundColor: '#FFF3E0', statusColor: '#F57C00' }; // Orange
                 case 'delivering':
-                    return { backgroundColor: '#E3F2FD', statusColor: '#1976D2' };
+                    return { backgroundColor: '#E3F2FD', statusColor: '#1976D2' }; // Blue
                 case 'delivered':
-                    return { backgroundColor: '#E8F5E9', statusColor: '#2E7D32' };
+                    return { backgroundColor: '#E8F5E9', statusColor: '#2E7D32' }; // Green
                 case 'canceled':
-                    return { backgroundColor: '#FFEBEE', statusColor: '#D32F2F' };
+                    return { backgroundColor: '#FFEBEE', statusColor: '#D32F2F' }; // Red
                 default:
-                    return { backgroundColor: '#FFF3E0', statusColor: '#F57C00' };
+                    return { backgroundColor: '#F3E5F5', statusColor: '#9C27B0' }; // Purple for unpaid/default state
             }
         };
 
@@ -185,7 +187,8 @@ const Appointments = () => {
                 <Card.Content>
                     <View style={styles.cardHeader}>
                         <Text style={[styles.statusText, { color: statusStyle.statusColor }]}>
-                            {item.state === 'delivering' ? 'Đang giao' :
+                            {item.state === 'preparing' ? 'Đang chuẩn bị' :
+                             item.state === 'delivering' ? 'Đang giao' :
                              item.state === 'delivered' ? 'Đã giao' :
                              item.state === 'canceled' ? 'Đã huỷ' :
                              'Chưa thanh toán'}

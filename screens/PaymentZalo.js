@@ -272,7 +272,7 @@ export default function PaymentZalo({ navigation, route }) {
         // Thanh toán thành công
         const APPOINTMENTs = firestore().collection("Appointments");
         await APPOINTMENTs.doc(appointmentId).update({
-          state: 'delivering',
+          state: 'preparing',
           paymentStatus: 'Payment successful'
         });
 

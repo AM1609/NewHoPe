@@ -200,11 +200,38 @@ const OrderDetail = ({ route, navigation }) => {
     };
 
     // Thêm hàm xử lý chuyển đến màn hình Map
-    const handleDeliveryMap = () => {
-        navigation.navigate('DeliveryMap', {
-            order: orderData,
-            orderId: order.id || orderData?.id
-        });
+    const handleDeliveryMap = async () => {
+        try {
+            const appointmentId = order.id || orderData?.id;
+            
+            // Update order status to 'delivering'
+            await firestore()
+                .collection('Appointments')
+                .doc(appointmentId)
+                .update({
+                    state: 'delivering',
+                    deliveryStartTime: firestore.FieldValue.serverTimestamp()
+                });
+            
+            // Update local state
+            setOrderData(prev => ({
+                ...prev,
+                state: 'delivering'
+            }));
+
+            // Navigate to delivery map
+            navigation.navigate('DeliveryMap', {
+                order: {
+                    ...orderData,
+                    state: 'delivering'
+                },
+                orderId: appointmentId
+            });
+            
+        } catch (error) {
+            console.error('Error starting delivery:', error);
+            Alert.alert('Lỗi', 'Không thể bắt đầu giao hàng. Vui lòng thử lại sau.');
+        }
     };
 
     if (isLoading) {
@@ -227,12 +254,28 @@ const OrderDetail = ({ route, navigation }) => {
             <ScrollView style={styles.scrollView}>
                 {orderData ? (
                     <View style={styles.orderDetails}>
-                        <Text style={styles.status}>
+                        <Text style={[
+                            styles.status,
+                            {
+                                backgroundColor: 
+                                    orderData.state === 'preparing' ? '#FFF3E0' :
+                                    orderData.state === 'delivering' ? '#E3F2FD' :
+                                    orderData.state === 'delivered' ? '#E8F5E9' :
+                                    orderData.state === 'canceled' ? '#FFEBEE' :
+                                    '#F3E5F5',
+                                color: 
+                                    orderData.state === 'preparing' ? '#F57C00' :
+                                    orderData.state === 'delivering' ? '#1976D2' :
+                                    orderData.state === 'delivered' ? '#2E7D32' :
+                                    orderData.state === 'canceled' ? '#D32F2F' :
+                                    '#9C27B0'
+                            }
+                        ]}>
                             Trạng thái: {
+                                orderData.state === 'preparing' ? 'Đang chuẩn bị' :
                                 orderData.state === 'delivering' ? 'Đang giao' :
                                 orderData.state === 'delivered' ? 'Đã giao' :
                                 orderData.state === 'canceled' ? 'Đã huỷ' :
-                                orderData.state === 'pending' ? 'Chưa thanh toán' :
                                 'Chưa thanh toán'
                             }
                         </Text>
@@ -257,6 +300,18 @@ const OrderDetail = ({ route, navigation }) => {
                             ))
                         ) : (
                             <Text>Không xác định</Text>
+                        )}
+                        {orderData.state === 'delivering' && (
+                            <Button
+                                mode="contained"
+                                onPress={() => navigation.navigate('DeliveryMap', {
+                                    order: orderData,
+                                    orderId: order.id || orderData?.id
+                                })}
+                                style={styles.trackButton}
+                            >
+                                Theo dõi tiến trình đơn hàng
+                            </Button>
                         )}
                     </View>
                 ) : (
@@ -442,5 +497,10 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flexGrow: 1,
+    },
+    trackButton: {
+        marginVertical: 10,
+        backgroundColor: '#1976D2',
+        paddingVertical: 8,
     },
 });
