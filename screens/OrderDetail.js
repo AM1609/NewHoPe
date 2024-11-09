@@ -54,7 +54,6 @@ const OrderDetail = ({ route, navigation }) => {
 
                 if (!currentUser) {
                     console.log('No authenticated user found');
-                    Alert.alert('Error', 'Vui lòng đăng nhập để tiếp tục');
                     navigation.navigate('Login');
                     return;
                 }
@@ -342,7 +341,7 @@ const OrderDetail = ({ route, navigation }) => {
                     </View>
                 )}
                 
-                {isStaff && orderData?.state === 'delivering' && (
+                {isStaff && orderData?.state === 'preparing' && (
                     <Button 
                         mode="contained" 
                         onPress={handleDeliveryMap}

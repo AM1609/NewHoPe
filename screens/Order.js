@@ -31,15 +31,24 @@ const Appointments = () => {
         
         let query;
         if (userLogin.role === 'staff') {
-            // Nếu là nhân viên nhưng chưa có base, lấy tất cả appointments
             if (!userLogin.base) {
                 console.log('Staff without base assigned - showing all appointments');
                 query = appointmentsRef;
             } else {
+                console.log('Querying appointments for base:', userLogin.base);
                 query = appointmentsRef.where('store.name', '==', userLogin.base);
+                
+                appointmentsRef.get().then(snapshot => {
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        console.log('Appointment data:', doc.id, {
+                            storeName: data.store?.name,
+                            storeData: data.store
+                        });
+                    });
+                });
             }
         } else {
-            // Nếu là khách hàng, lấy theo email
             query = appointmentsRef.where('email', '==', userLogin.email);
         }
 
@@ -47,15 +56,15 @@ const Appointments = () => {
             const appointmentsData = [];
             querySnapshot.forEach(documentSnapshot => {
                 const data = documentSnapshot.data();
+                console.log('Found appointment:', data.store?.name);
                 appointmentsData.push({
                     ...data,
                     id: documentSnapshot.id,
                 });
             });
 
-            // Sắp xếp theo thời gian, đơn hàng mới nhất ở trên cùng
             appointmentsData.sort((a, b) => b.datetime.toDate() - a.datetime.toDate());
-
+            console.log('Total appointments found:', appointmentsData.length);
             setAppointments(appointmentsData);
         });
             
@@ -94,7 +103,7 @@ const Appointments = () => {
                     return;
                 }
 
-                console.log('Current user email:', currentUser.email); // Debug log
+                console.log('Current user email:', currentUser.email);
 
                 const userDoc = await firestore()
                     .collection('USERS')
@@ -103,7 +112,7 @@ const Appointments = () => {
 
                 if (userDoc.exists) {
                     const userData = userDoc.data();
-                    console.log('Fetched user data:', userData); // Debug log
+                    console.log('Fetched user data:', userData);
                     
                     // Ensure all required fields are present
                     if (!userData.email) {
@@ -111,19 +120,22 @@ const Appointments = () => {
                     }
 
                     setUser(userData);
+                    // Cập nhật lại context với dữ liệu chính xác từ Firestore
                     setController({
                         type: 'USER_LOGIN',
                         value: {
                             email: userData.email,
-                            base: userData.base || null,
+                            base: userData.base, // Lấy base trực tiếp từ userData
                             role: userData.role || 'customer',
-                            // Include other necessary user data
                             fullName: userData.fullName,
                             phone: userData.phone,
                             address: userData.address
                         }
                     });
                     setIsStaff(userData.role === 'staff');
+                    
+                    // Log để kiểm tra
+                    console.log('Updated user base:', userData.base);
                 } else {
                     console.log('User document not found for email:', currentUser.email);
                     navigation.navigate('Login');
@@ -139,7 +151,7 @@ const Appointments = () => {
             }
         };
 
-        // Only run if we don't have user data
+        // Chạy fetchUserData khi component mount hoặc khi không có userLogin
         if (!controller.userLogin?.email) {
             fetchUserData();
         }

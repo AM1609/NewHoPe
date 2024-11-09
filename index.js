@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useReducer } from "react";
 import { Alert } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // AppRegistry
 import {AppRegistry} from 'react-native';
 import App from './App';
@@ -109,18 +110,37 @@ const login = (dispatch, email, password) => {
     .catch(e => Alert.alert("Email hoặc mật khẩu không chính xác"));
 };
 
-
-const logout = (dispatch) => {
-    auth().signOut()
-    .then(() => dispatch({ type: "LOGOUT" }));
+const handleLogout = async (dispatch) => {
+    try {
+        // Xóa thông tin đăng nhập từ AsyncStorage
+        await AsyncStorage.removeItem('userEmail');
+        await AsyncStorage.removeItem('userPassword');
+        
+        // Dispatch action để clear user state
+        dispatch({
+            type: 'LOGOUT'
+        });
+        
+        // Thử đăng xuất khỏi Firebase Auth nếu có
+        try {
+            await auth().signOut();
+        } catch (authError) {
+            console.log('Firebase Auth signOut error (non-critical):', authError);
+        }
+        
+        console.log('Logout successful');
+        return true;
+    } catch (error) {
+        console.error('Logout error:', error);
+        throw error;
+    }
 };
-
 
 export {
     MyContextControllerProvider,
     useMyContextProvider,
     createAccount,
     login,
-    logout,
+    handleLogout,
     createnewservice,
 };

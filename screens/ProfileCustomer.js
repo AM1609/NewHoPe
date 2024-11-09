@@ -1,7 +1,7 @@
 import React,{useEffect} from "react";
 import { Text } from "react-native-paper";
-import { View, StyleSheet,Button, TouchableOpacity } from "react-native";
-import {logout, useMyContextProvider } from "../index";
+import { View, StyleSheet,Button, TouchableOpacity, Alert } from "react-native";
+import {useMyContextProvider, handleLogout } from "../index";
 import { NavigationContainer } from "@react-navigation/native";
 import colors from '../routers/colors';
 
@@ -20,12 +20,19 @@ const ProfileCustomer = ({navigation}) =>{
         return null;
     }
 
-    const handleLogout = async () => {
+    const handleLogoutPress = async () => {
         try {
-            await logout(dispatch);
-            navigation.navigate('Login');
+            await handleLogout(dispatch);
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+            });
         } catch (error) {
             console.error('Logout error:', error);
+            Alert.alert(
+                'Lỗi',
+                'Không thể đăng xuất. Vui lòng thử lại sau.'
+            );
         }
     };
     const handleEdit = () => {
@@ -74,7 +81,7 @@ const ProfileCustomer = ({navigation}) =>{
                 
                 <TouchableOpacity 
                     style={[styles.button, styles.logoutButton]}
-                    onPress={handleLogout}
+                    onPress={handleLogoutPress}
                 >
                     <Text style={styles.buttonText}>Đăng xuất</Text>
                 </TouchableOpacity>

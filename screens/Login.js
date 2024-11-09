@@ -4,6 +4,7 @@ import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import { useMyContextProvider, login } from '../index';
 import colors from '../routers/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import firestore from '@react-native-firebase/firestore';
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -32,15 +33,67 @@ const Login = ({ navigation }) => {
       alert("Email và mật khẩu không được để trống.");
       return;
     }
+
     try {
-      await login(dispatch, email, password);
-      await AsyncStorage.setItem('userEmail', email);
-      await AsyncStorage.setItem('userPassword', password);
-      console.log("userEmail",email);
-      console.log("userPassword",password);
+      // Kiểm tra user trong Firestore
+      const userDoc = await firestore()
+        .collection('USERS')
+        .doc(email.trim().toLowerCase())
+        .get();
+
+      if (!userDoc.exists) {
+        alert("Tài khoản không tồn tại.");
+        return;
+      }
+
+      const userData = userDoc.data();
+      console.log("Attempting login with:", {
+        inputEmail: email,
+        inputPassword: password,
+        userData: userData
+      });
+      
+      // Kiểm tra mật khẩu
+      if (userData.password !== password.trim()) {
+        alert("Mật khẩu không chính xác.");
+        return;
+      }
+
+      // Dispatch action trước khi navigate
+      dispatch({
+        type: 'USER_LOGIN',
+        value: {
+          email: userData.email,
+          role: userData.role,
+          base: userData.base,
+          fullName: userData.fullName,
+          phone: userData.phone,
+          address: userData.address
+        }
+      });
+
+      // Lưu thông tin đăng nhập
+      await AsyncStorage.setItem('userEmail', email.trim().toLowerCase());
+      await AsyncStorage.setItem('userPassword', password.trim());
+      
+      console.log("Login successful, navigating...");
+      
+      // Navigate dựa trên role
+      if (userData.role === "admin") {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Admin" }],
+        });
+      } else if (userData.role === "staff" || userData.role === "customer") {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Customer" }],
+        });
+      }
+
     } catch (error) {
-      console.error("Đăng nhập thất bại:", error);
-      alert("Đăng nhập thất bại. Vui lòng kiểm tra thông tin.");
+      console.error("Lỗi đăng nhập:", error);
+      alert("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
     }
   };
 
@@ -56,16 +109,17 @@ const Login = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (userLogin != null) {
-      if (userLogin.role === "admin") {
-        navigation.navigate("Admin");
-      } else if (userLogin.role === "customer") {
-        navigation.navigate("Customer");
-      } else if (userLogin.role === "staff") {
-        navigation.navigate("Customer");
-      }
+    if (userLogin) {
+        console.log("UserLogin state:", userLogin);
+        if (userLogin.role === "admin") {
+            navigation.navigate("Admin");
+        } else if (userLogin.role === "customer") {
+            navigation.navigate("Customer");
+        } else if (userLogin.role === "staff") {
+            navigation.navigate("Customer");
+        }
     }
-  }, [userLogin]);
+}, [userLogin, navigation]);
 
   return (
     <View style={styles.container}>
