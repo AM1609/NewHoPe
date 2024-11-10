@@ -326,7 +326,6 @@ const StoreLocationScreen = () => {
           longitude: currentPosition.longitude
         },
         discountValue: discountValue,
-        // Thêm thông tin cơ sở
         store: {
           id: nearestStore.id,
           name: nearestStore.name,
@@ -337,7 +336,6 @@ const StoreLocationScreen = () => {
 
       const APPOINTMENTs = firestore().collection("Appointments");
       const docRef = await APPOINTMENTs.add(appointmentData);
-      await APPOINTMENTs.doc(docRef.id).update({ id: userInfo.email });
 
       Alert.alert(
         'Thành công',

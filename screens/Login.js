@@ -5,6 +5,7 @@ import { useMyContextProvider, login } from '../index';
 import colors from '../routers/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
+import CheckBox from '@react-native-community/checkbox';
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -15,6 +16,7 @@ const Login = ({ navigation }) => {
   const { userLogin } = controller;
   const [showPassword, setShowPassword] = useState(false);
   const [disableLogin, setDisableLogin] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const hasErrorEmail = () => emailTouched && !email.includes("@");
   const hasErrorPassword = () => passwordTouched && password.length < 6;
@@ -28,17 +30,37 @@ const Login = ({ navigation }) => {
     );
   }, [email, password, emailTouched, passwordTouched]);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  useEffect(() => {
+    const checkRememberedLogin = async () => {
+      try {
+        const savedEmail = await AsyncStorage.getItem('userEmail');
+        const savedPassword = await AsyncStorage.getItem('userPassword');
+        const remembered = await AsyncStorage.getItem('rememberMe');
+        
+        if (remembered === 'true' && savedEmail && savedPassword) {
+          setEmail(savedEmail);
+          setPassword(savedPassword);
+          setRememberMe(true);
+          // Tự động đăng nhập nếu có thông tin được lưu
+          handleLogin(savedEmail, savedPassword);
+        }
+      } catch (error) {
+        console.error('Error checking remembered login:', error);
+      }
+    };
+    checkRememberedLogin();
+  }, []);
+
+  const handleLogin = async (emailInput = email, passwordInput = password) => {
+    if (!emailInput || !passwordInput) {
       alert("Email và mật khẩu không được để trống.");
       return;
     }
 
     try {
-      // Kiểm tra user trong Firestore
       const userDoc = await firestore()
         .collection('USERS')
-        .doc(email.trim().toLowerCase())
+        .doc(emailInput.trim().toLowerCase())
         .get();
 
       if (!userDoc.exists) {
@@ -47,19 +69,20 @@ const Login = ({ navigation }) => {
       }
 
       const userData = userDoc.data();
-      console.log("Attempting login with:", {
-        inputEmail: email,
-        inputPassword: password,
-        userData: userData
-      });
       
-      // Kiểm tra mật khẩu
-      if (userData.password !== password.trim()) {
+      if (userData.password !== passwordInput.trim()) {
         alert("Mật khẩu không chính xác.");
         return;
       }
 
-      // Dispatch action trước khi navigate
+      if (rememberMe) {
+        await AsyncStorage.setItem('userEmail', emailInput.trim().toLowerCase());
+        await AsyncStorage.setItem('userPassword', passwordInput.trim());
+        await AsyncStorage.setItem('rememberMe', 'true');
+      } else {
+        await AsyncStorage.multiRemove(['userEmail', 'userPassword', 'rememberMe']);
+      }
+
       dispatch({
         type: 'USER_LOGIN',
         value: {
@@ -72,19 +95,12 @@ const Login = ({ navigation }) => {
         }
       });
 
-      // Lưu thông tin đăng nhập
-      await AsyncStorage.setItem('userEmail', email.trim().toLowerCase());
-      await AsyncStorage.setItem('userPassword', password.trim());
-      
-      console.log("Login successful, navigating...");
-      
-      // Navigate dựa trên role
       if (userData.role === "admin") {
         navigation.reset({
           index: 0,
           routes: [{ name: "Admin" }],
         });
-      } else if (userData.role === "staff" || userData.role === "customer") {
+      } else {
         navigation.reset({
           index: 0,
           routes: [{ name: "Customer" }],
@@ -96,30 +112,6 @@ const Login = ({ navigation }) => {
       alert("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
     }
   };
-
-  useEffect(() => {
-    const checkLogin = async () => {
-      const savedEmail = await AsyncStorage.getItem('userEmail');
-      const savedPassword = await AsyncStorage.getItem('userPassword');
-      if (savedEmail && savedPassword) {
-        setEmail(savedEmail);
-      }
-    };
-    checkLogin();
-  }, []);
-
-  useEffect(() => {
-    if (userLogin) {
-        console.log("UserLogin state:", userLogin);
-        if (userLogin.role === "admin") {
-            navigation.navigate("Admin");
-        } else if (userLogin.role === "customer") {
-            navigation.navigate("Customer");
-        } else if (userLogin.role === "staff") {
-            navigation.navigate("Customer");
-        }
-    }
-}, [userLogin, navigation]);
 
   return (
     <View style={styles.container}>
@@ -159,9 +151,20 @@ const Login = ({ navigation }) => {
         />
         <Text style={styles.showPasswordText}>Hiển thị mật khẩu</Text>
       </TouchableOpacity>
+      <View style={styles.rememberMeContainer}>
+        <CheckBox
+          value={rememberMe}
+          onValueChange={setRememberMe}
+          tintColors={{ 
+            true: '#000000',
+            false: '#000000'
+          }}
+        />
+        <Text style={styles.rememberMeText}>Ghi nhớ đăng nhập</Text>
+      </View>
       <Button
         mode='contained'
-        onPress={handleLogin}
+        onPress={() => handleLogin(email, password)}
         disabled={disableLogin}
         style={styles.loginButton}
         labelStyle={styles.loginButtonText}
@@ -237,5 +240,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     marginHorizontal: 20,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginLeft: 10,
+    backgroundColor: 'transparent',
+  },
+  rememberMeText: {
+    fontSize: 16,
+    color: colors.text,
+    marginLeft: 8,
   },
 });

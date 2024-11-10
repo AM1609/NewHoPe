@@ -4,25 +4,26 @@ import { View, StyleSheet,Button, TouchableOpacity, Alert } from "react-native";
 import {useMyContextProvider, handleLogout } from "../index";
 import { NavigationContainer } from "@react-navigation/native";
 import colors from '../routers/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileCustomer = ({navigation}) =>{
     const [controller, dispatch] = useMyContextProvider();
     const { userLogin } = controller;
     
-    useEffect(()=>{
-        if(!userLogin){
-            navigation.navigate('Login');
+    useEffect(() => {
+        if (!userLogin) {
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+            });
             return;
         }
-    }, [userLogin, navigation]);
-
-    if (!userLogin) {
-        return null;
-    }
+    }, [userLogin]);
 
     const handleLogoutPress = async () => {
         try {
-            await handleLogout(dispatch);
+            await AsyncStorage.multiRemove(['userEmail', 'userPassword', 'rememberMe']);
+            dispatch({ type: 'LOGOUT' });
             navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }],
@@ -39,54 +40,58 @@ const ProfileCustomer = ({navigation}) =>{
         navigation.navigate("ChangePassword");
     };
     return(
-        <View style={styles.container}>
-            <Text style={styles.header}>Hồ sơ</Text>
-            
-            <View style={styles.profileCard}>
-                <View style={styles.infoRow}>
-                    <Text style={styles.label}>Email:</Text>
-                    <Text style={styles.value}>{userLogin.email}</Text>
+        <>
+        {userLogin ? (
+            <View style={styles.container}>
+                <Text style={styles.header}>Hồ sơ</Text>
+                
+                <View style={styles.profileCard}>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.label}>Email:</Text>
+                        <Text style={styles.value}>{userLogin.email}</Text>
+                    </View>
+                    
+                    <View style={styles.infoRow}>
+                        <Text style={styles.label}>Tên:</Text>
+                        <Text style={styles.value}>{userLogin.fullName}</Text>
+                    </View>
+                    
+                    <View style={styles.infoRow}>
+                        <Text style={styles.label}>Địa chỉ:</Text>
+                        <Text style={styles.value}>{userLogin.address}</Text>
+                    </View>
+                    
+                    <View style={styles.infoRow}>
+                        <Text style={styles.label}>Điện thoại:</Text>
+                        <Text style={styles.value}>{userLogin.phone}</Text>
+                    </View>
+                    
+                    <View style={styles.infoRow}>
+                        <Text style={styles.label}>Cấp bậc:</Text>
+                        <Text style={styles.value}>
+                            {userLogin.role === "customer" ? "Khách hàng" : "Nhân viên"}
+                        </Text>
+                    </View>
                 </View>
                 
-                <View style={styles.infoRow}>
-                    <Text style={styles.label}>Tên:</Text>
-                    <Text style={styles.value}>{userLogin.fullName}</Text>
-                </View>
-                
-                <View style={styles.infoRow}>
-                    <Text style={styles.label}>Địa chỉ:</Text>
-                    <Text style={styles.value}>{userLogin.address}</Text>
-                </View>
-                
-                <View style={styles.infoRow}>
-                    <Text style={styles.label}>Điện thoại:</Text>
-                    <Text style={styles.value}>{userLogin.phone}</Text>
-                </View>
-                
-                <View style={styles.infoRow}>
-                    <Text style={styles.label}>Cấp bậc:</Text>
-                    <Text style={styles.value}>
-                        {userLogin.role === "customer" ? "Khách hàng" : "Nhân viên"}
-                    </Text>
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity 
+                        style={[styles.button, styles.changePasswordButton]}
+                        onPress={handleEdit}
+                    >
+                        <Text style={styles.buttonText}>Đổi mật khẩu</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={[styles.button, styles.logoutButton]}
+                        onPress={handleLogoutPress}
+                    >
+                        <Text style={styles.buttonText}>Đăng xuất</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
-            
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity 
-                    style={[styles.button, styles.changePasswordButton]}
-                    onPress={handleEdit}
-                >
-                    <Text style={styles.buttonText}>Đổi mật khẩu</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                    style={[styles.button, styles.logoutButton]}
-                    onPress={handleLogoutPress}
-                >
-                    <Text style={styles.buttonText}>Đăng xuất</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+        ) : null}
+        </>
     );
 };
 

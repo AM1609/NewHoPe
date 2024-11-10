@@ -7,6 +7,7 @@ import { useMyContextProvider } from "../index";
 import { useNavigation } from '@react-navigation/native'; // Thêm import này
 import colors from '../routers/colors'; // Thêm import này
 import auth from '@react-native-firebase/auth';
+import notifee from '@notifee/react-native';
 
 const Appointments = () => {
     const [appointments, setAppointments] = useState([]);
@@ -17,6 +18,30 @@ const Appointments = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isStaff, setIsStaff] = useState(false);
     const [user, setUser] = useState(null);
+
+    async function onDisplayNotification(order) {
+        // Create a notification channel (required for Android)
+        const channelId = await notifee.createChannel({
+            id: 'new-orders',
+            name: 'New Orders',
+            importance: 4,
+            vibration: true,
+        });
+
+        // Display notification
+        await notifee.displayNotification({
+            title: 'Đơn hàng mới!',
+            body: `Có đơn hàng mới với giá trị ${order.totalPrice.toLocaleString('vi-VN')} VNĐ`,
+            android: {
+                channelId,
+                pressAction: {
+                    id: 'default',
+                },
+                importance: 4,
+                sound: 'default',
+            },
+        });
+    }
 
     useEffect(() => {
         if (!userLogin?.email) {
@@ -32,18 +57,18 @@ const Appointments = () => {
         let query;
         if (userLogin.role === 'staff') {
             if (!userLogin.base) {
-                console.log('Staff without base assigned - showing all appointments');
                 query = appointmentsRef;
             } else {
-                console.log('Querying appointments for base:', userLogin.base);
                 query = appointmentsRef.where('store.name', '==', userLogin.base);
                 
                 appointmentsRef.get().then(snapshot => {
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        console.log('Appointment data:', doc.id, {
+                        console.log('Appointment data:', {
+                            id: doc.id,
                             storeName: data.store?.name,
-                            storeData: data.store
+                            storeData: data.store,
+                            state: data.state
                         });
                     });
                 });
@@ -56,7 +81,6 @@ const Appointments = () => {
             const appointmentsData = [];
             querySnapshot.forEach(documentSnapshot => {
                 const data = documentSnapshot.data();
-                console.log('Found appointment:', data.store?.name);
                 appointmentsData.push({
                     ...data,
                     id: documentSnapshot.id,
@@ -66,6 +90,8 @@ const Appointments = () => {
             appointmentsData.sort((a, b) => b.datetime.toDate() - a.datetime.toDate());
             console.log('Total appointments found:', appointmentsData.length);
             setAppointments(appointmentsData);
+        }, error => {
+            console.error('Snapshot error:', error);
         });
             
         return () => unsubscribe();

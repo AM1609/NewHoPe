@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@notifee/react-native": "^9.1.2",
     "@react-google-maps/api": "^2.20.3",
     "@react-native-async-storage/async-storage": "^2.0.0",
     "@react-native-clipboard/clipboard": "^1.14.3",
@@ -43,7 +44,9 @@
     "react-native-screens": "^3.31.1",
     "react-native-svg": "^15.8.0",
     "react-native-swiper": "^1.6.0",
-    "react-native-swiper-flatlist": "^3.2.4"
+    "react-native-swiper-flatlist": "^3.2.4",
+    "react-redux": "^9.1.2",
+    "redux": "^5.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
