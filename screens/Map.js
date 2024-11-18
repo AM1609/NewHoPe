@@ -319,7 +319,7 @@ const StoreLocationScreen = () => {
         totalPrice: totalAmount,
         phone: userInfo.phone,
         datetime: new Date(),
-        state: "new",
+        state: "pending",
         address: address,
         location: {
           latitude: currentPosition.latitude,
