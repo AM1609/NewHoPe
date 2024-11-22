@@ -2,10 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Image, Alert } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import firestore from '@react-native-firebase/firestore';
+import { useCart } from "../routers/CartContext";
 
 const PaymentQR = ({ route, navigation }) => {
     const { orderId, amount, userInfo } = route.params;
+    const { clearCart } = useCart();
     const [qrImage, setQrImage] = useState(null);
+
+    console.log('Received orderId:', orderId);
 
     useEffect(() => {
         navigation.setOptions({
@@ -57,27 +61,37 @@ const PaymentQR = ({ route, navigation }) => {
     };
 
     const handlePaymentSuccess = async () => {
-        try {
-            await firestore()
-                .collection('Appointments')
-                .doc(orderId)
-                .update({
-                    paymentStatus: 'paid',
-                    paidAt: firestore.FieldValue.serverTimestamp(),
-                });
+        if (!orderId) {
+            Alert.alert('Lỗi', 'Không tìm thấy mã đơn hàng');
+            return;
+        }
 
-            Alert.alert(
-                'Thành công',
-                'Thanh toán đã được xác nhận',
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => navigation.goBack()
-                    }
-                ]
-            );
+        try {
+            // Kiểm tra document có tồn tại không
+            const docRef = firestore().collection('Appointments').doc(orderId);
+            const doc = await docRef.get();
+            
+            if (!doc.exists) {
+                console.log(orderId);
+                Alert.alert('Lỗi', 'Không tìm thấy đơn hàng trong hệ thống');
+                return;
+            }
+
+            // Nếu document tồn tại thì mới update
+            await docRef.update({
+                paymentStatus: 'paid',
+                state: 'completed',
+                paidAt: firestore.FieldValue.serverTimestamp(),
+            });
+            
+            // Xóa giỏ hàng sau khi thanh toán thành công
+            clearCart();
+                
+            Alert.alert('Thành công', 'Thanh toán đã được xác nhận', [
+                { text: 'OK', onPress: () => navigation.goBack() }
+            ]);
         } catch (error) {
-            console.error('Error updating payment status:', error);
+            console.error('Error details:', error);
             Alert.alert('Lỗi', 'Không thể cập nhật trạng thái thanh toán');
         }
     };
@@ -104,11 +118,11 @@ const PaymentQR = ({ route, navigation }) => {
 
             <Button
                 mode="contained"
-                onPress={() => navigation.navigate('ServicesCustomer')}
+                onPress={handlePaymentSuccess}
                 style={styles.button}
                 labelStyle={styles.buttonText}
             >
-                Quay về trang chủ
+                Xác nhận đã thanh toán
             </Button>
         </View>
     );

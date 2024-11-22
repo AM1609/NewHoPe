@@ -56,23 +56,9 @@ const Appointments = () => {
         
         let query;
         if (userLogin.role === 'staff') {
-            if (!userLogin.base) {
-                query = appointmentsRef;
-            } else {
-                query = appointmentsRef.where('store.name', '==', userLogin.base);
-                
-                appointmentsRef.get().then(snapshot => {
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        console.log('Appointment data:', {
-                            id: doc.id,
-                            storeName: data.store?.name,
-                            storeData: data.store,
-                            state: data.state
-                        });
-                    });
-                });
-            }
+            query = appointmentsRef
+                .where('store.name', '==', userLogin.base)
+                .where('state', 'in', ['unpaid', 'preparing', 'delivering', 'delivered']);
         } else {
             query = appointmentsRef.where('email', '==', userLogin.email);
         }

@@ -16,11 +16,6 @@ const truncateTitle = (title) => {
     return title;
 };
 
-const generateOrderId = () => {
-  // Tạo orderId với format: ORD + timestamp
-  return 'ORD' + Date.now();
-};
-
 const Cart = () => {
   const { cart, removeFromCart, clearCart, updateQuantity, addToCart1, addQuantity } = useCart(); // Ensure updateQuantity is destructured here
 
@@ -203,6 +198,42 @@ const Cart = () => {
     return false;
   };
 
+  // Thêm hàm tạo đơn hàng
+  const createOrder = async () => {
+    try {
+        const services = cart.map(item => ({
+            title: item.title,
+            quantity: item.quantity,
+            options: item.options
+        }));
+
+        const orderData = {
+            email: userLogin.email,
+            fullName: userLogin.fullName,
+            services,
+            totalPrice: totalWithDiscount,
+            phone: userLogin.phone,
+            datetime: new Date(),
+            state: "new",
+            discountValue: discountValue
+        };
+
+        const APPOINTMENTs = firestore().collection("Appointments");
+        const docRef = await APPOINTMENTs.add(orderData);
+
+        // Sửa lại phần này: sử dụng docRef.id thay vì generateOrderId()
+        navigation.navigate('PaymentQR', {
+            orderId: docRef.id,  // Thay đổi ở đây
+            amount: totalWithDiscount,
+            userInfo: userLogin
+        });
+
+    } catch (error) {
+        console.error('Error creating order:', error);
+        Alert.alert('Lỗi', 'Không thể tạo đơn hàng. Vui lòng thử lại.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -229,11 +260,7 @@ const Cart = () => {
             style={[styles.button, styles.orderButton]}
             onPress={() => {
               if (!checkCartEmpty()) {
-                navigation.navigate('PaymentQR', {
-                  orderId: generateOrderId(),
-                  amount: total,
-                  userInfo: userLogin
-                });
+                createOrder(); // Gọi hàm tạo đơn hàng trước khi chuyển màn hình
               }
             }}
           >

@@ -52,49 +52,28 @@ const OrderDetail = ({ route, navigation }) => {
                 const currentUser = auth().currentUser;
                 console.log('Current auth user:', currentUser); // Debug log
 
-                if (!currentUser) {
-                    console.log('No authenticated user found');
-                    navigation.navigate('Login');
+                if (!userLogin?.email) {
+                    console.log('No user login data found');
                     return;
                 }
 
                 // First try to get user data from Firestore
                 const userDoc = await firestore()
                     .collection('users')
-                    .doc(currentUser.uid)
+                    .doc(currentUser?.uid || userLogin.uid)
                     .get();
 
                 if (userDoc.exists) {
                     const userData = {
                         ...userDoc.data(),
-                        email: currentUser.email,
-                        uid: currentUser.uid
+                        email: userLogin.email,
+                        uid: currentUser?.uid || userLogin.uid
                     };
                     console.log('User data from Firestore:', userData);
                     console.log('User role:', userData.role);
                     setUser(userData);
-                    // Check if user is staff
                     setIsStaff(userLogin.role === 'staff');
                     console.log('Is staff?:', userLogin.role === 'staff');
-                } else {
-                    // If no Firestore document exists, create one with basic auth data
-                    const basicUserData = {
-                        email: currentUser.email,
-                        uid: currentUser.uid,
-                        displayName: currentUser.displayName || '',
-                        phoneNumber: currentUser.phoneNumber || '',
-                        createdAt: firestore.FieldValue.serverTimestamp()
-                    };
-
-                    // Create the user document
-                    await firestore()
-                        .collection('users')
-                        .doc(currentUser.uid)
-                        .set(basicUserData);
-
-                    console.log('Created new user document:', basicUserData);
-                    setUser(basicUserData);
-                    setIsStaff(false); // New users are not staff by default
                 }
             } catch (error) {
                 console.error("Error in fetchUserData:", error);
@@ -108,7 +87,7 @@ const OrderDetail = ({ route, navigation }) => {
         };
 
         fetchUserData();
-    }, [navigation]);
+    }, [navigation, userLogin]);
 
     const handlePayment = () => {
         console.log('Order Data:', orderData); // Debug log
