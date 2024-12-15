@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, Linking, Modal, TextInput } from 'react-native';
 import CryptoJS from 'crypto-js';
 import moment from 'moment';
 import { useCart } from '../routers/CartContext';
@@ -25,22 +25,62 @@ export default function PaymentZalo({ navigation, route }) {
   // Debug logging
   console.log('Route params:', route.params);
 
-  const { cartItems, totalAmount, userInfo, appointmentId } = route.params || {};
+  const { appointmentId } = route.params || {};
   const [controller] = useMyContextProvider();
   const { userLogin } = controller;
   const [lastTransactionId, setLastTransactionId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [userDetails, setUserDetails] = useState({
+  const [appointmentDetails, setAppointmentDetails] = useState({
+    totalAmount: 0,
     address: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    services: [],
+    email: '',
+    fullName: ''
   });
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editedFullName, setEditedFullName] = useState('');
+  const [editedPhoneNumber, setEditedPhoneNumber] = useState('');
 
-  // Combine user information from different sources
+  // Fetch appointment details from Firebase
   useEffect(() => {
-    const user = userInfo || userLogin || auth().currentUser;
-    console.log('Combined user info:', user);
-    setCurrentUser(user);
-  }, [userInfo, userLogin]);
+    const fetchAppointmentDetails = async () => {
+      try {
+        if (appointmentId) {
+          const appointmentDoc = await firestore()
+            .collection('Appointments')
+            .doc(appointmentId)
+            .get();
+
+          if (appointmentDoc.exists) {
+            const data = appointmentDoc.data();
+            setAppointmentDetails({
+              totalAmount: data.discountValue || 0,
+              address: data.address || 'Chưa có thông tin',
+              phoneNumber: data.phone || 'Chưa có thông tin',
+              services: data.services || [],
+              email: data.email || '',
+              fullName: data.fullName || 'Khách hàng'
+            });
+            
+            // Set current user based on appointment email
+            if (data.email) {
+              setCurrentUser({ email: data.email });
+            }
+          } else {
+            console.log('Appointment not found');
+            Alert.alert('Lỗi', 'Không tìm thấy thông tin đơn hàng');
+            navigation.goBack();
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching appointment details:', error);
+        Alert.alert('Lỗi', 'Không thể tải thông tin đơn hàng');
+      }
+    };
+
+    fetchAppointmentDetails();
+  }, [appointmentId]);
 
   useLayoutEffect(() => {
     // Ẩn navigation bar
@@ -66,40 +106,10 @@ export default function PaymentZalo({ navigation, route }) {
     };
   }, [navigation]);
 
-  // Fetch user details from Firebase
-  useEffect(() => {
-    const fetchAppointmentDetails = async () => {
-      try {
-        if (appointmentId) {
-          const appointmentDoc = await firestore()
-            .collection('Appointments')
-            .doc(appointmentId)
-            .get();
-
-          if (appointmentDoc.exists) {
-            const appointmentData = appointmentDoc.data();
-            console.log('Appointment data:', appointmentData);
-
-            setUserDetails({
-              address: appointmentData.address || 'Chưa có thông tin',
-              phoneNumber: appointmentData.phone || 'Chưa có thông tin'
-            });
-          } else {
-            console.log('Appointment not found');
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching appointment details:', error);
-      }
-    };
-
-    fetchAppointmentDetails();
-  }, [appointmentId]);
-
   // Thêm console.log để kiểm tra userDetails sau khi được set
   useEffect(() => {
-    console.log('Current userDetails:', userDetails);
-  }, [userDetails]);
+    console.log('Current userDetails:', appointmentDetails);
+  }, [appointmentDetails]);
 
   const handlePayment = async () => {
     console.log('Current user in handlePayment:', currentUser);
@@ -111,7 +121,7 @@ export default function PaymentZalo({ navigation, route }) {
         return;
     }
 
-    if (!totalAmount) {
+    if (!appointmentDetails.totalAmount) {
         Alert.alert('Error', 'Số tiền thanh toán không hợp lệ');
         return;
     }
@@ -147,7 +157,7 @@ export default function PaymentZalo({ navigation, route }) {
         console.log('Successfully updated appointment:', appointmentId);
 
         // Proceed with payment
-        await initiateZaloPayment(app_trans_id, totalAmount);
+        await initiateZaloPayment(app_trans_id, appointmentDetails.totalAmount);
     } catch (error) {
         console.error("Error updating payment info: ", error);
         
@@ -175,7 +185,7 @@ export default function PaymentZalo({ navigation, route }) {
         // Prepare items for ZaloPay
         const items = [{
             itemid: appointmentId,
-            itemname: cartItems?.[0]?.title || 'Service Payment',
+            itemname: appointmentDetails.services?.[0]?.title || 'Service Payment',
             itemprice: amount,
             itemquantity: 1
         }];
@@ -321,33 +331,123 @@ export default function PaymentZalo({ navigation, route }) {
     }
   };
 
+  const handleUpdateInfo = async () => {
+    try {
+      if (!editedFullName.trim() || !editedPhoneNumber.trim()) {
+        Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
+        return;
+      }
+
+      await firestore()
+        .collection('Appointments')
+        .doc(appointmentId)
+        .update({
+          fullName: editedFullName,
+          phone: editedPhoneNumber,
+        });
+
+      setAppointmentDetails(prev => ({
+        ...prev,
+        fullName: editedFullName,
+        phoneNumber: editedPhoneNumber,
+      }));
+
+      setIsEditModalVisible(false);
+      Alert.alert('Thành công', 'Đã cập nhật thông tin nhận hàng');
+    } catch (error) {
+      console.error('Error updating info:', error);
+      Alert.alert('Lỗi', 'Không thể cập nhật thông tin. Vui lòng thử lại');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Thanh toán với ZaloPay</Text>
       
       <View style={styles.orderCard}>
-        <Text style={styles.cardTitle}>Thông tin đơn hàng</Text>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Số tiền:</Text>
-          <Text style={styles.amount}>{formatCurrency(totalAmount)} VNĐ</Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>Thông tin đơn hàng</Text>
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => {
+              setEditedFullName(appointmentDetails.fullName);
+              setEditedPhoneNumber(appointmentDetails.phoneNumber);
+              setIsEditModalVisible(true);
+            }}
+          >
+            <Text style={styles.editButtonText}>Sửa thông tin</Text>
+          </TouchableOpacity>
         </View>
         
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Mã đơn hàng:</Text>
-          <Text style={styles.value}>{appointmentId || 'N/A'}</Text>
+          <Text style={styles.label}>Khách hàng:</Text>
+          <Text style={styles.value}>{appointmentDetails.fullName}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.label}>Số tiền:</Text>
+          <Text style={styles.amount}>{formatCurrency(appointmentDetails.totalAmount)} VNĐ</Text>
         </View>
         
         <View style={styles.infoRow}>
           <Text style={styles.label}>Địa chỉ:</Text>
-          <Text style={styles.value}>{userDetails.address}</Text>
+          <Text style={styles.value}>{appointmentDetails.address}</Text>
         </View>
         
         <View style={styles.infoRow}>
           <Text style={styles.label}>Số điện thoại:</Text>
-          <Text style={styles.value}>{userDetails.phoneNumber}</Text>
+          <Text style={styles.value}>{appointmentDetails.phoneNumber}</Text>
         </View>
       </View>
+
+      <Modal
+        visible={isEditModalVisible}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sửa thông tin nhận hàng</Text>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Họ tên:</Text>
+              <TextInput
+                style={styles.input}
+                value={editedFullName}
+                onChangeText={setEditedFullName}
+                placeholder="Nhập họ tên"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Số điện thoại:</Text>
+              <TextInput
+                style={styles.input}
+                value={editedPhoneNumber}
+                onChangeText={setEditedPhoneNumber}
+                placeholder="Nhập số điện thoại"
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setIsEditModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Hủy</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleUpdateInfo}
+              >
+                <Text style={styles.buttonText}>Lưu</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
@@ -481,5 +581,89 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  editButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+
+  editButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+  },
+
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1A237E',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
+  inputContainer: {
+    marginBottom: 16,
+  },
+
+  inputLabel: {
+    fontSize: 16,
+    color: '#546E7A',
+    marginBottom: 8,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+
+  saveButton: {
+    backgroundColor: '#2196F3',
+  },
+
+  cancelButton: {
+    backgroundColor: '#FF4444',
   },
 });

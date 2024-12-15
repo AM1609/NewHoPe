@@ -9,8 +9,10 @@ const ServicesCustomer = ({ navigation }) => {
     const [services, setServices] = useState([]);
     const [categories, setCategories] = useState([]);
     const [name, setName] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
 
     const filterByCategory = (category) => {
+        setSelectedCategory(category);
         if (category === 'all') {
             setServices(initialServices);
         } else {
@@ -153,18 +155,30 @@ const ServicesCustomer = ({ navigation }) => {
                             style={styles.categoriesContainer}
                         >
                             <TouchableOpacity 
-                                style={[styles.categoryButton, { backgroundColor: '#ff6347' }]} 
+                                style={[
+                                    styles.categoryButton,
+                                    selectedCategory === 'all' && styles.selectedCategoryButton
+                                ]} 
                                 onPress={() => filterByCategory('all')}
                             >
-                                <Text style={[styles.categoryText, { color: '#fff' }]}>Tất cả</Text>
+                                <Text style={[
+                                    styles.categoryText,
+                                    selectedCategory === 'all' && styles.selectedCategoryText
+                                ]}>Tất cả</Text>
                             </TouchableOpacity>
                             {categories.map((category, index) => (
                                 <TouchableOpacity 
                                     key={index} 
-                                    style={styles.categoryButton} 
+                                    style={[
+                                        styles.categoryButton,
+                                        selectedCategory === category && styles.selectedCategoryButton
+                                    ]} 
                                     onPress={() => filterByCategory(category)}
                                 >
-                                    <Text style={styles.categoryText}>{category}</Text>
+                                    <Text style={[
+                                        styles.categoryText,
+                                        selectedCategory === category && styles.selectedCategoryText
+                                    ]}>{category}</Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -231,10 +245,16 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 3,
     },
+    selectedCategoryButton: {
+        backgroundColor: '#ff6347',
+    },
     categoryText: {
         fontSize: 14,
         fontWeight: '600',
         color: '#333',
+    },
+    selectedCategoryText: {
+        color: '#fff',
     },
     sectionTitle: {
         fontSize: 24,

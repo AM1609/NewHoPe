@@ -147,32 +147,27 @@ const Cart = () => {
         const discountData = discountDoc.data();
         const conditionProduct = discountData.condition?.product;
         const productInCart = cart.some(item => item.id === conditionProduct);
-  
-        // Check if the condition exists and is met, or if there is no condition
-        if (!discountData.condition || total >= parseInt(discountData.condition.total, 10)) {
-          // Check the type
-          if (discountData.type === '*') {
-            const discountAmount = total * (discountData.value / 100);
-            alert(`Mã khuyến mãi hợp lệ! Giảm giá: ${discountData.value}%`);
-            setDiscountValue(discountAmount);
-          } else if (discountData.type === '-') {
-            alert(`Mã khuyến mãi hợp lệ! Giảm giá: ${discountData.value} VNĐ`);
-            setDiscountValue(discountData.value);
-          }
-        } if (productInCart) {
-          // Check the type
-          if (discountData.type === '*') {
-            const discountAmount = total * (discountData.value / 100);
-            alert(`Mã khuyến mãi hợp lệ! Giảm giá: ${discountData.value}%`);
-            setDiscountValue(discountAmount);
-          } else if (discountData.type === '-') {
-            alert(`Mã khuyến mãi hợp lệ! Giảm giá: ${discountData.value} VNĐ`);
-            setDiscountValue(discountData.value);
-          }
-        } else if (!productInCart) {
+
+        // Kiểm tra điều kiện sản phẩm trước
+        if (conditionProduct && !productInCart) {
           alert('Mã chỉ áp dụng với sản phẩm yêu cầu.');
-        } else if (discountData.condition?.total) {
+          return;
+        }
+
+        // Kiểm tra điều kiện tổng tiền
+        if (discountData.condition?.total && total < parseInt(discountData.condition.total, 10)) {
           alert(`Tổng giá phải đạt tối thiểu ${parseInt(discountData.condition.total, 10).toLocaleString('vi-VN')} VNĐ để áp dụng mã khuyến mãi.`);
+          return;
+        }
+
+        // Nếu không có điều kiện hoặc đã thỏa mãn điều kiện thì áp dụng giảm giá
+        if (discountData.type === '*') {
+          const discountAmount = total * (discountData.value / 100);
+          Alert.alert("Thông báo",`Mã khuyến mãi hợp lệ! Giảm giá: ${discountData.value}%`);
+          setDiscountValue(discountAmount);
+        } else if (discountData.type === '-') {
+          alert(`Mã khuyến mãi hợp lệ! Giảm giá: ${discountData.value} VNĐ`);
+          setDiscountValue(discountData.value);
         }
       } else {
         alert('Mã khuyến mãi không tồn tại.');
@@ -234,6 +229,11 @@ const Cart = () => {
     }
   };
 
+  const handleClearCart = () => {
+    clearCart();
+    setDiscountValue(0); // Đặt lại giá trị giảm giá về 0
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -241,7 +241,17 @@ const Cart = () => {
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
       />
-      <Text style={styles.total}>Tổng cộng: {totalWithDiscount.toLocaleString('vi-VN')} VNĐ</Text> 
+      {discountValue > 0 && (
+        <Text style={styles.total}>
+          Trước giảm: {total.toLocaleString('vi-VN')} VNĐ{'\n'}
+          Tổng cộng: {totalWithDiscount.toLocaleString('vi-VN')} VNĐ
+        </Text>
+      )}
+      {discountValue === 0 && (
+        <Text style={styles.total}>
+          Tổng cộng: {totalWithDiscount.toLocaleString('vi-VN')} VNĐ
+        </Text>
+      )}
       
       <View style={styles.promotionContainer}>
         <TextInput
@@ -260,7 +270,7 @@ const Cart = () => {
             style={[styles.button, styles.orderButton]}
             onPress={() => {
               if (!checkCartEmpty()) {
-                createOrder(); // Gọi hàm tạo đơn hàng trước khi chuyển màn hình
+                createOrder();
               }
             }}
           >
@@ -286,7 +296,7 @@ const Cart = () => {
         
         <TouchableOpacity
           style={[styles.button, styles.clearButton]}
-          onPress={clearCart}
+          onPress={handleClearCart}
         >
           <Text style={styles.buttonText}>Xóa giỏ hàng</Text>
         </TouchableOpacity>

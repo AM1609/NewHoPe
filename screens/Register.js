@@ -21,6 +21,11 @@ const Register = ({ navigation }) => {
   const hasErrorEmail = () => !email.includes('@');
   const hasErrorPassword = () => password.length < 6;
   const hasErrorPasswordConfirm = () => confirmPassword !== password;
+  const hasErrorPhone = () => {
+    const phoneRegex = /^[0-9]{10}$/;  // Regex cho số điện thoại 10 số
+    return !phoneRegex.test(phone);
+  };
+  const hasErrorAddress = () => address.trim() === '';
 
   useEffect(() => {
     setDisableCreate(
@@ -28,8 +33,8 @@ const Register = ({ navigation }) => {
       hasErrorEmail() ||
       hasErrorPassword() ||
       hasErrorPasswordConfirm() ||
-      phone.trim() === '' ||
-      address.trim() === ''
+      hasErrorPhone() ||
+      hasErrorAddress()
     );
   }, [fullName, email, password, confirmPassword, phone, address]);
 
@@ -110,14 +115,21 @@ const Register = ({ navigation }) => {
         mode="outlined"
         theme={{ colors: { primary: '#000' }, fonts: { regular: { fontSize: 18 } } }}
       />
+      <HelperText style={styles.helperText} type='error' visible={hasErrorAddress()}>
+        Địa chỉ không được để trống
+      </HelperText>
       <TextInput
         label={"Điện thoại"}
         value={phone}
         onChangeText={setPhone}
         style={styles.input}
         mode="outlined"
+        keyboardType="phone-pad"
         theme={{ colors: { primary: '#000' }, fonts: { regular: { fontSize: 18 } } }}
       />
+      <HelperText style={styles.helperText} type='error' visible={hasErrorPhone()}>
+        Số điện thoại phải có 10 chữ số
+      </HelperText>
       <Button
         mode='contained'
         onPress={handleRegister}

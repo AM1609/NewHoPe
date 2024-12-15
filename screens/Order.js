@@ -58,7 +58,7 @@ const Appointments = () => {
         if (userLogin.role === 'staff') {
             query = appointmentsRef
                 .where('store.name', '==', userLogin.base)
-                .where('state', 'in', ['unpaid', 'preparing', 'delivering', 'delivered']);
+                .where('state', 'in', [ 'preparing', 'delivering', 'delivered']);
         } else {
             query = appointmentsRef.where('email', '==', userLogin.email);
         }

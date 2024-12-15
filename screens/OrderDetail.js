@@ -52,28 +52,29 @@ const OrderDetail = ({ route, navigation }) => {
                 const currentUser = auth().currentUser;
                 console.log('Current auth user:', currentUser); // Debug log
 
-                if (!userLogin?.email) {
-                    console.log('No user login data found');
+                if (!currentUser) {
+                    console.log('No current user found');
+                    // Alert.alert('Error', 'Vui lòng đăng nhập lại để tiếp tục');
                     return;
                 }
 
-                // First try to get user data from Firestore
                 const userDoc = await firestore()
                     .collection('users')
-                    .doc(currentUser?.uid || userLogin.uid)
+                    .doc(currentUser.uid)
                     .get();
 
                 if (userDoc.exists) {
                     const userData = {
                         ...userDoc.data(),
-                        email: userLogin.email,
-                        uid: currentUser?.uid || userLogin.uid
+                        email: currentUser.email,
+                        uid: currentUser.uid
                     };
                     console.log('User data from Firestore:', userData);
-                    console.log('User role:', userData.role);
                     setUser(userData);
-                    setIsStaff(userLogin.role === 'staff');
-                    console.log('Is staff?:', userLogin.role === 'staff');
+                    setIsStaff(userData.role === 'staff');
+                } else {
+                    console.log('User document not found');
+                    Alert.alert('Error', 'Không tìm thấy thông tin người dùng');
                 }
             } catch (error) {
                 console.error("Error in fetchUserData:", error);
@@ -93,16 +94,15 @@ const OrderDetail = ({ route, navigation }) => {
         console.log('Order Data:', orderData); // Debug log
 
         if (isLoading) {
-            Alert.alert('Error', 'Vui lòng đợi trong khi chúng tôi tải thông tin người dùng');
+            Alert.alert('Error', 'Vui lòng đợi trong khi chúng tôi tải thông tin đơn hàng');
             return;
         }
 
-        if (!user || !user.email) {
-            Alert.alert('Error', 'Vui lòng đăng nhập lại để tiếp tục');
+        if (!orderData || !orderData.email) {
+            Alert.alert('Error', 'Không tìm thấy thông tin email trong đơn hàng');
             return;
         }
 
-        // Get the correct document ID
         const appointmentId = order.id || orderData?.id;
         console.log('Appointment ID:', appointmentId); // Debug log
 
@@ -117,20 +117,21 @@ const OrderDetail = ({ route, navigation }) => {
         }
 
         const paymentData = {
-            appointmentId: appointmentId, // Using the correct Firestore document ID
+            appointmentId: appointmentId,
             totalAmount: parseInt(orderData.totalPrice),
             userInfo: {
-                email: user.email,
-                uid: user.uid,
-                displayName: user.displayName || '',
-                phoneNumber: user.phoneNumber || ''
+                email: orderData.email,
+                uid: orderData.uid || '',
+                displayName: orderData.displayName || '',
+                phoneNumber: orderData.phoneNumber || ''
             },
             cartItems: [{
                 id: appointmentId,
                 title: orderData?.services?.[0]?.title || 'Service',
                 price: parseInt(orderData.totalPrice),
                 quantity: 1
-            }]
+            }],
+            orderName: orderData?.services?.[0]?.title || 'Service'
         };
         
         console.log('Payment Data being passed:', paymentData); // Debug log

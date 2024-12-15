@@ -95,6 +95,8 @@ const Login = ({ navigation }) => {
         }
       });
 
+      console.log('Thông tin tài khoản:', userData);
+
       if (userData.role === "admin") {
         navigation.reset({
           index: 0,
