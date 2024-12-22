@@ -243,8 +243,11 @@ const Cart = () => {
       />
       {discountValue > 0 && (
         <Text style={styles.total}>
-          Trước giảm: {total.toLocaleString('vi-VN')} VNĐ{'\n'}
-          Tổng cộng: {totalWithDiscount.toLocaleString('vi-VN')} VNĐ
+          <Text style={styles.discountedPrice}>
+            Trước giảm: {total.toLocaleString('vi-VN')} VNĐ
+          </Text>
+          {'\n'}
+          Phải trả: {totalWithDiscount.toLocaleString('vi-VN')} VNĐ
         </Text>
       )}
       {discountValue === 0 && (
@@ -477,6 +480,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+  discountedPrice: {
+    textDecorationLine: 'line-through',
+    color: '#888'
+  }
 });
 
 export default Cart;
